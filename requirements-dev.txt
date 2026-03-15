@@ -1,0 +1,27 @@
+# UrbanFlow CDMX — Dependencias de desarrollo y testing
+# Instalar con: pip install -r requirements-dev.txt
+# (requiere requirements.txt instalado previamente)
+
+-r requirements.txt
+
+# ──────────────────────────────────────────────
+# Testing
+# ──────────────────────────────────────────────
+pytest==8.2.2
+pytest-asyncio==0.23.7    # Tests async (endpoints FastAPI)
+pytest-cov==5.0.0         # Cobertura de código
+httpx==0.27.0             # Cliente HTTP para TestClient de FastAPI
+
+# ──────────────────────────────────────────────
+# Calidad de código
+# ──────────────────────────────────────────────
+ruff==0.5.4               # Linter + formatter (reemplaza flake8/black/isort)
+mypy==1.10.1              # Type checking estático
+
+# ──────────────────────────────────────────────
+# Notebooks
+# ──────────────────────────────────────────────
+jupyter==1.0.0
+ipykernel==6.29.5
+matplotlib==3.9.1         # Visualización en notebooks
+seaborn==0.13.2

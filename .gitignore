@@ -1,0 +1,115 @@
+# ──────────────────────────────────────────────
+# Python
+# ──────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Distribución / empaquetado
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+wheels/
+
+# ──────────────────────────────────────────────
+# Entorno virtual
+# ──────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ──────────────────────────────────────────────
+# Variables de entorno y secretos
+# ──────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ──────────────────────────────────────────────
+# Datos — nunca versionar datos crudos ni grandes
+# ──────────────────────────────────────────────
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/external/.gitkeep
+
+# Formatos de datos pesados
+*.csv
+*.parquet
+*.feather
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.npy
+*.npz
+*.geojson
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+
+# ──────────────────────────────────────────────
+# Modelos entrenados
+# ──────────────────────────────────────────────
+*.model
+*.joblib
+*.ubj
+models/artifacts/
+
+# ──────────────────────────────────────────────
+# Jupyter Notebooks
+# ──────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ──────────────────────────────────────────────
+# Testing y cobertura
+# ──────────────────────────────────────────────
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+
+# ──────────────────────────────────────────────
+# Linters y type checkers
+# ──────────────────────────────────────────────
+.ruff_cache/
+.mypy_cache/
+
+# ──────────────────────────────────────────────
+# IDEs y editores
+# ──────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ──────────────────────────────────────────────
+# Logs
+# ──────────────────────────────────────────────
+*.log
+logs/
+
+# ──────────────────────────────────────────────
+# Docker
+# ──────────────────────────────────────────────
+docker/secrets/
+
+# ──────────────────────────────────────────────
+# Prophet / Stan
+# ──────────────────────────────────────────────
+cmdstan*/
