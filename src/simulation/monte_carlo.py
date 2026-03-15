@@ -264,6 +264,7 @@ class MonteCarloEngine:
         paso_minutos: float = PASO_MINUTOS_DEFAULT,
         max_pasos: int = MAX_PASOS_DEFAULT,
         rng: np.random.Generator | None = None,
+        velocidad_params: dict[int, dict[str, float]] | None = None,
     ) -> None:
         _verificar_cadena_ajustada(cadena)
         if n_simulaciones < 1:
@@ -279,11 +280,12 @@ class MonteCarloEngine:
                 f"'max_pasos' debe ser >= 1, se recibió {max_pasos}."
             )
 
-        self.cadena         = cadena
-        self.n_simulaciones = n_simulaciones
-        self.paso_minutos   = paso_minutos
-        self.max_pasos      = max_pasos
-        self._rng           = rng if rng is not None else np.random.default_rng()
+        self.cadena              = cadena
+        self.n_simulaciones      = n_simulaciones
+        self.paso_minutos        = paso_minutos
+        self.max_pasos           = max_pasos
+        self._rng                = rng if rng is not None else np.random.default_rng()
+        self._velocidad_params   = velocidad_params if velocidad_params is not None else VELOCIDAD_PARAMS
 
         # Matriz de transición acumulada (filas = origen, cols = destino)
         # Precomputada una vez para acelerar la simulación vectorizada.
@@ -402,7 +404,7 @@ class MonteCarloEngine:
         """
         velocidades = np.empty(estados.shape, dtype=np.float32)
 
-        for estado_id, params in VELOCIDAD_PARAMS.items():
+        for estado_id, params in self._velocidad_params.items():
             mascara = (estados == estado_id)
             n_celdas = int(mascara.sum())
             if n_celdas == 0:
