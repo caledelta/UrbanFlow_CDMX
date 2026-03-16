@@ -312,6 +312,35 @@ def ratio_a_estado(ratio: float) -> int:
 # UTILIDADES GEOGRÁFICAS
 # ══════════════════════════════════════════════════════════════════════
 
+def _reverse_geocode(lat: float, lon: float) -> str:
+    """
+    Devuelve un nombre legible para unas coordenadas.
+    1. Busca si hay un punto conocido de PUNTOS_CDMX a ≤ 300 m.
+    2. Si no, intenta Nominatim con timeout 3 s.
+    3. Si falla, devuelve "Punto ({lat:.4f}, {lon:.4f})".
+    """
+    # 1. Punto conocido cercano (sin red)
+    for nombre, (plat, plon) in PUNTOS_CDMX.items():
+        if calcular_distancia(lat, lon, plat, plon) <= 0.3:
+            return nombre
+
+    # 2. Nominatim reverse geocoding
+    try:
+        from geopy.geocoders import Nominatim
+        from geopy.exc import GeocoderTimedOut, GeocoderServiceError
+        geolocator = Nominatim(user_agent="vialai_cdmx", timeout=3)
+        location   = geolocator.reverse((lat, lon), language="es", exactly_one=True)
+        if location and location.address:
+            # Usa los 2-3 primeros tokens para no saturar el título
+            partes = [p.strip() for p in location.address.split(",")]
+            return ", ".join(partes[:3])
+    except Exception:
+        pass
+
+    # 3. Fallback legible
+    return f"Punto ({lat:.4f}, {lon:.4f})"
+
+
 def calcular_distancia(lat1: float, lon1: float,
                        lat2: float, lon2: float) -> float:
     """
@@ -871,11 +900,13 @@ def render_gauge(p50: float, p10: float, p90: float,
         delta  = {"reference": distancia_km / 40 * 60, "suffix": " min",
                   "increasing": {"color": ROJO}, "decreasing": {"color": VERDE}},
         number = {"suffix": " min",
-                  "font": {"size": 52, "color": AZUL_MARINO, "family": "Arial Black"}},
+                  "font": {"size": 44, "color": AZUL_MARINO, "family": "Arial Black"},
+                  "valueformat": ".0f"},
         title  = {"text": "Tiempo estimado P50<br>"
                            "<span style='font-size:0.8em;color:#888'>"
                            "mediana de las simulaciones</span>",
                   "font": {"size": 15, "color": "#444"}},
+        domain = {"x": [0.05, 0.95], "y": [0, 1]},
         gauge  = {
             "axis": {"range": [0, max_val], "tickwidth": 1,
                      "tickcolor": "#CCC", "tickfont": {"size": 10}},
@@ -890,8 +921,12 @@ def render_gauge(p50: float, p10: float, p90: float,
                           "thickness": 0.85, "value": p50},
         },
     ))
-    fig.update_layout(height=280, margin=dict(t=30, b=0, l=20, r=20),
-                      paper_bgcolor="white", font={"family": "Arial"})
+    fig.update_layout(
+        height=300,
+        margin=dict(t=40, b=10, l=60, r=60),
+        paper_bgcolor="white",
+        font={"family": "Arial"},
+    )
     return fig
 
 
@@ -1243,7 +1278,7 @@ with col_mapa:
 
         if click_key != st.session_state.ultimo_click:
             st.session_state.ultimo_click = click_key
-            nombre_click = f"{click['lat']:.4f}, {click['lng']:.4f}"
+            nombre_click = _reverse_geocode(click["lat"], click["lng"])
             punto = {"lat": click["lat"], "lon": click["lng"],
                      "nombre": nombre_click}
 
@@ -1293,21 +1328,63 @@ if predecir and corredor_activo:
         unsafe_allow_html=True,
     )
 
-    # ── 5 métricas resumen ────────────────────────────────────────────
-    m1, m2, m3, m4, m5 = st.columns(5)
-    with m1:
-        st.metric("P50 — Mediana", f"{res['p50']:.0f} min")
+    # ── Métricas resumen ─────────────────────────────────────────────
+    # Fila 1: P50 destacado
+    vel_media = corredor_activo["distancia_km"] / (res["p50"] / 60)
+    st.markdown(
+        f"""
+        <div style="background:{AZUL_MARINO};border-radius:12px;
+                    padding:1rem 1.5rem;margin-bottom:0.75rem;
+                    display:flex;align-items:center;gap:2rem;">
+            <div>
+                <div style="color:#A8C7E8;font-size:0.8rem;
+                            text-transform:uppercase;letter-spacing:.05em;">
+                    Tiempo estimado (P50 · mediana)
+                </div>
+                <div style="color:white;font-size:2.6rem;font-weight:800;
+                            line-height:1.1;margin-top:2px;">
+                    {res['p50']:.0f} <span style="font-size:1.2rem;
+                    font-weight:400;">min</span>
+                </div>
+            </div>
+            <div style="color:#A8C7E8;font-size:0.85rem;line-height:1.7;">
+                Distancia: <b style="color:white;">{corredor_activo['distancia_km']} km</b><br>
+                Velocidad media: <b style="color:white;">{vel_media:.1f} km/h</b>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    # Fila 2: P10 / P90 / Banda / Velocidad
+    m2, m3, m4, m5 = st.columns(4)
     with m2:
-        st.metric("P10 — Optimista", f"{res['p10']:.0f} min",
-                  delta=f"{res['p10'] - res['p50']:.0f} min", delta_color="normal")
+        st.metric(
+            "P10 · Optimista",
+            f"{res['p10']:.0f} min",
+            delta=f"{res['p10'] - res['p50']:.0f} min",
+            delta_color="normal",
+            help="Percentil 10: el 10 % de las simulaciones fue más rápido que este valor.",
+        )
     with m3:
-        st.metric("P90 — Pesimista", f"{res['p90']:.0f} min",
-                  delta=f"+{res['p90'] - res['p50']:.0f} min", delta_color="inverse")
+        st.metric(
+            "P90 · Pesimista",
+            f"{res['p90']:.0f} min",
+            delta=f"+{res['p90'] - res['p50']:.0f} min",
+            delta_color="inverse",
+            help="Percentil 90: el 10 % de las simulaciones fue más lento que este valor.",
+        )
     with m4:
-        st.metric("Banda P10–P90", f"{res['p90'] - res['p10']:.0f} min")
+        st.metric(
+            "Banda P10–P90",
+            f"{res['p90'] - res['p10']:.0f} min",
+            help="Amplitud de la banda de incertidumbre: diferencia entre P90 y P10.",
+        )
     with m5:
-        vel_media = corredor_activo["distancia_km"] / (res["p50"] / 60)
-        st.metric("Velocidad media", f"{vel_media:.1f} km/h")
+        st.metric(
+            "Velocidad media",
+            f"{vel_media:.1f} km/h",
+            help="Velocidad implícita calculada como distancia / tiempo P50.",
+        )
 
     st.markdown("<br>", unsafe_allow_html=True)
 
