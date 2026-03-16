@@ -600,35 +600,6 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    # ── ⚡ Rutas frecuentes ────────────────────────────────────────────
-    # Los 5 corredores predefinidos como acceso rápido.
-    # Al hacer clic se pre-rellenan origen, destino y waypoints.
-    st.markdown(
-        "<div style='font-size:0.78rem;color:#A8C4D8;text-transform:uppercase;"
-        "letter-spacing:.06em;font-weight:600;margin-bottom:4px;'>"
-        "⚡ Rutas frecuentes</div>",
-        unsafe_allow_html=True,
-    )
-    for nombre_ruta, datos_ruta in CORREDORES.items():
-        etiqueta = f"{datos_ruta['icono']} {nombre_ruta.split('·')[0].strip()}"
-        if st.button(etiqueta, key=f"btn_{nombre_ruta[:20]}"):
-            # Fijar selectboxes al origen y destino de la ruta
-            st.session_state.sel_origen  = datos_ruta["origen_key"]
-            st.session_state.sel_destino = datos_ruta["destino_key"]
-            # Fijar coordenadas directamente
-            lat_o, lon_o = PUNTOS_CDMX[datos_ruta["origen_key"]]
-            lat_d, lon_d = PUNTOS_CDMX[datos_ruta["destino_key"]]
-            st.session_state.origen  = {"lat": lat_o, "lon": lon_o,
-                                         "nombre": datos_ruta["origen_key"]}
-            st.session_state.destino = {"lat": lat_d, "lon": lon_d,
-                                         "nombre": datos_ruta["destino_key"]}
-            st.session_state.waypoints_activos = datos_ruta["waypoints"]
-            st.session_state.color_ruta        = datos_ruta["color_mapa"]
-            st.session_state.modo_click        = "A"  # resetear modo
-
-    st.markdown("<hr style='border-color:rgba(255,255,255,0.15);'>",
-                unsafe_allow_html=True)
-
     # ── 📍 Origen ─────────────────────────────────────────────────────
     st.markdown(
         "<div style='font-size:0.78rem;color:#A8C4D8;text-transform:uppercase;"
@@ -725,6 +696,34 @@ with st.sidebar:
             "🛣️ Define origen y destino para calcular la distancia</div>",
             unsafe_allow_html=True,
         )
+
+    # ── Rutas frecuentes ──────────────────────────────────────────────
+    st.markdown("<hr style='border-color:rgba(255,255,255,0.15);'>",
+                unsafe_allow_html=True)
+    st.markdown(
+        "<div style='font-size:0.72rem;color:#7B9DB8;text-transform:uppercase;"
+        "letter-spacing:.06em;font-weight:600;margin-bottom:6px;'>"
+        "⚡ Rutas frecuentes</div>",
+        unsafe_allow_html=True,
+    )
+    for nombre_ruta, datos_ruta in CORREDORES.items():
+        etiqueta = f"{datos_ruta['icono']} {nombre_ruta.split('·')[0].strip()}"
+        if st.button(
+            etiqueta,
+            key=f"btn_{nombre_ruta[:20]}",
+            use_container_width=True,
+        ):
+            st.session_state.sel_origen  = datos_ruta["origen_key"]
+            st.session_state.sel_destino = datos_ruta["destino_key"]
+            lat_o, lon_o = PUNTOS_CDMX[datos_ruta["origen_key"]]
+            lat_d, lon_d = PUNTOS_CDMX[datos_ruta["destino_key"]]
+            st.session_state.origen  = {"lat": lat_o, "lon": lon_o,
+                                         "nombre": datos_ruta["origen_key"]}
+            st.session_state.destino = {"lat": lat_d, "lon": lon_d,
+                                         "nombre": datos_ruta["destino_key"]}
+            st.session_state.waypoints_activos = datos_ruta["waypoints"]
+            st.session_state.color_ruta        = datos_ruta["color_mapa"]
+            st.session_state.modo_click        = "A"
 
     st.markdown("<hr style='border-color:rgba(255,255,255,0.15);'>",
                 unsafe_allow_html=True)
@@ -953,33 +952,52 @@ def render_gauge(p50: float, p10: float, p90: float,
     fig = go.Figure(go.Indicator(
         mode   = "gauge+number+delta",
         value  = p50,
-        delta  = {"reference": distancia_km / 40 * 60, "suffix": " min",
-                  "increasing": {"color": ROJO}, "decreasing": {"color": VERDE}},
-        number = {"suffix": " min",
-                  "font": {"size": 44, "color": AZUL_MARINO, "family": "Arial Black"},
-                  "valueformat": ".0f"},
-        title  = {"text": "Tiempo estimado P50<br>"
-                           "<span style='font-size:0.8em;color:#888'>"
-                           "mediana de las simulaciones</span>",
-                  "font": {"size": 15, "color": "#444"}},
-        domain = {"x": [0.05, 0.95], "y": [0, 1]},
+        delta  = {
+            "reference":  distancia_km / 40 * 60,
+            "suffix":     " min",
+            "increasing": {"color": ROJO},
+            "decreasing": {"color": VERDE},
+            "font":       {"size": 16},
+        },
+        number = {
+            "suffix":      " min",
+            "font":        {"size": 52, "color": AZUL_MARINO, "family": "Arial Black"},
+            "valueformat": ".0f",
+        },
+        title  = {
+            "text": (
+                "Tiempo estimado <b>P50</b><br>"
+                "<span style='font-size:0.78em;color:#888;font-weight:400;'>"
+                "mediana de las simulaciones</span>"
+            ),
+            "font": {"size": 16, "color": "#333"},
+        },
+        domain = {"x": [0.0, 1.0], "y": [0.0, 1.0]},
         gauge  = {
-            "axis": {"range": [0, max_val], "tickwidth": 1,
-                     "tickcolor": "#CCC", "tickfont": {"size": 10}},
-            "bar":  {"color": AZUL_MARINO, "thickness": 0.28},
-            "bgcolor": "white", "borderwidth": 0,
+            "axis": {
+                "range":     [0, max_val],
+                "tickwidth": 1,
+                "tickcolor": "#CCC",
+                "tickfont":  {"size": 11},
+            },
+            "bar":       {"color": AZUL_MARINO, "thickness": 0.30},
+            "bgcolor":   "white",
+            "borderwidth": 0,
             "steps": [
-                {"range": [0,               max_val * 0.40], "color": "#D4EFE4"},
-                {"range": [max_val * 0.40,  max_val * 0.70], "color": "#FEF3CD"},
-                {"range": [max_val * 0.70,  max_val],        "color": "#FADBD8"},
+                {"range": [0,              max_val * 0.40], "color": "#D4EFE4"},
+                {"range": [max_val * 0.40, max_val * 0.70], "color": "#FEF3CD"},
+                {"range": [max_val * 0.70, max_val],        "color": "#FADBD8"},
             ],
-            "threshold": {"line": {"color": AZUL_MARINO, "width": 3},
-                          "thickness": 0.85, "value": p50},
+            "threshold": {
+                "line":      {"color": AZUL_MARINO, "width": 3},
+                "thickness": 0.85,
+                "value":     p50,
+            },
         },
     ))
     fig.update_layout(
-        height=300,
-        margin=dict(t=40, b=10, l=60, r=60),
+        height=320,
+        margin=dict(t=60, b=20, l=40, r=40),
         paper_bgcolor="white",
         font={"family": "Arial"},
     )
@@ -1049,26 +1067,40 @@ def render_histograma(tiempos: np.ndarray, p10: float,
 
 
 def render_semaforo(nivel: str, etiqueta: str, ratio: float,
-                    estado_nombre: str) -> None:
+                    estado_nombre: str, color_nivel: str) -> None:
     av = "activa" if nivel == "verde"    else ""
     aa = "activa" if nivel == "amarillo" else ""
     ar = "activa" if nivel == "rojo"     else ""
     st.markdown(
         f"""
-        <div class="semaforo-container">
-            <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="background:white;border-radius:14px;
+                    border:2px solid {color_nivel};
+                    padding:1.4rem 1.8rem;
+                    display:grid;
+                    grid-template-columns:72px 1fr;
+                    align-items:center;
+                    gap:1.5rem;
+                    box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+            <!-- columna izquierda: semáforo centrado -->
+            <div style="display:flex;flex-direction:column;
+                        align-items:center;gap:7px;">
                 <div class="luz luz-roja {ar}"></div>
                 <div class="luz luz-amarilla {aa}"></div>
                 <div class="luz luz-verde {av}"></div>
             </div>
-            <div style="margin-left:0.8rem;">
-                <div style="font-size:1.15rem;font-weight:800;
-                            color:{AZUL_MARINO};">{etiqueta}</div>
-                <div style="font-size:0.85rem;color:#666;margin-top:2px;">
+            <!-- columna derecha: jerarquía de texto -->
+            <div>
+                <div style="font-size:1.45rem;font-weight:800;
+                            color:{color_nivel};line-height:1.2;">
+                    {etiqueta}
+                </div>
+                <div style="font-size:0.9rem;color:#555;
+                            margin-top:0.35rem;">
                     Estado Markov: <b>{estado_nombre}</b>
                 </div>
-                <div style="font-size:0.78rem;color:#999;margin-top:2px;">
-                    Ratio congestión: {ratio:.2f} · 1.0 = flujo libre
+                <div style="font-size:0.78rem;color:#999;
+                            margin-top:0.2rem;">
+                    Ratio de congestión: {ratio:.2f}
                 </div>
             </div>
         </div>
@@ -1086,6 +1118,7 @@ def render_mapa_od(
     destino:   dict | None,
     waypoints: list[tuple[float, float]],
     color:     str = AZUL_MARINO,
+    height:    int = 400,
 ) -> dict | None:
     """
     Mapa Folium interactivo con soporte de clic para fijar origen (A)
@@ -1178,7 +1211,7 @@ def render_mapa_od(
         m,
         key="mapa_od",
         width="100%",
-        height=400,
+        height=height,
         returned_objects=["last_clicked"],
     )
 
@@ -1417,43 +1450,61 @@ if predecir and corredor_activo:
         """,
         unsafe_allow_html=True,
     )
-    # Fila 2: P10 / P90 / Banda / Velocidad
+    # Fila 2: P10 / P90 / Banda / Velocidad — cards HTML (sin truncamiento)
+    _CARD = (
+        "<div style='background:white;border:1px solid #E4E9F0;"
+        "border-radius:10px;padding:1rem 1.2rem;min-width:160px;"
+        "box-shadow:0 1px 4px rgba(0,0,0,0.05);'>"
+        "<div style='font-size:12px;color:#888;white-space:nowrap;"
+        "text-transform:uppercase;letter-spacing:.04em;'>{label}</div>"
+        "<div style='font-size:28px;font-weight:700;color:{vcolor};"
+        "white-space:nowrap;line-height:1.2;margin-top:4px;'>{value}</div>"
+        "<div style='font-size:13px;color:{dcolor};white-space:nowrap;"
+        "margin-top:3px;'>{delta}</div>"
+        "</div>"
+    )
     m2, m3, m4, m5 = st.columns(4)
     with m2:
-        st.metric(
-            "P10 · Optimista",
-            f"{res['p10']:.0f} min",
-            delta=f"{res['p10'] - res['p50']:.0f} min",
-            delta_color="normal",
-            help="Percentil 10: el 10 % de las simulaciones fue más rápido que este valor.",
-        )
+        delta_p10 = res["p10"] - res["p50"]
+        st.markdown(_CARD.format(
+            label="P10 · Optimista",
+            value=f"{res['p10']:.0f} min",
+            vcolor=VERDE,
+            delta=f"{delta_p10:.0f} min vs P50",
+            dcolor=VERDE,
+        ), unsafe_allow_html=True)
     with m3:
-        st.metric(
-            "P90 · Pesimista",
-            f"{res['p90']:.0f} min",
-            delta=f"+{res['p90'] - res['p50']:.0f} min",
-            delta_color="inverse",
-            help="Percentil 90: el 10 % de las simulaciones fue más lento que este valor.",
-        )
+        delta_p90 = res["p90"] - res["p50"]
+        st.markdown(_CARD.format(
+            label="P90 · Pesimista",
+            value=f"{res['p90']:.0f} min",
+            vcolor=ROJO,
+            delta=f"+{delta_p90:.0f} min vs P50",
+            dcolor=ROJO,
+        ), unsafe_allow_html=True)
     with m4:
-        st.metric(
-            "Banda P10–P90",
-            f"{res['p90'] - res['p10']:.0f} min",
-            help="Amplitud de la banda de incertidumbre: diferencia entre P90 y P10.",
-        )
+        banda = res["p90"] - res["p10"]
+        st.markdown(_CARD.format(
+            label="Banda P10 – P90",
+            value=f"{banda:.0f} min",
+            vcolor=AZUL_MARINO,
+            delta="amplitud de incertidumbre",
+            dcolor="#999",
+        ), unsafe_allow_html=True)
     with m5:
-        st.metric(
-            "Velocidad media",
-            f"{vel_media:.1f} km/h",
-            help="Velocidad implícita calculada como distancia / tiempo P50.",
-        )
+        st.markdown(_CARD.format(
+            label="Velocidad media",
+            value=f"{vel_media:.1f} km/h",
+            vcolor=AZUL_MARINO,
+            delta=f"{corredor_activo['distancia_km']} km / P50",
+            dcolor="#999",
+        ), unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.divider()
 
-    # ── Gauge + semáforo ──────────────────────────────────────────────
-    col_gauge, col_sem = st.columns([1.6, 1], gap="large")
-
-    with col_gauge:
+    # ── Gauge (centrado, ancho ~60% de la página) ─────────────────────
+    _, col_g, _ = st.columns([1, 3, 1])
+    with col_g:
         st.plotly_chart(
             render_gauge(res["p50"], res["p10"], res["p90"],
                          corredor_activo["distancia_km"]),
@@ -1461,60 +1512,128 @@ if predecir and corredor_activo:
             config={"displayModeBar": False},
         )
 
-    with col_sem:
-        st.markdown("<br><br>", unsafe_allow_html=True)
-        render_semaforo(nivel, etiq_nivel, res["ratio"], estado_nombre)
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown(
-            f"""
-            <div style="background:#F0F4F8;border-radius:10px;
-                        padding:0.9rem 1rem;font-size:0.82rem;color:#555;">
-                <b>Detalles de la simulación</b><br>
-                Simulaciones: <b>{n_sims:,}</b><br>
-                Completadas: <b>{n_sims - res['n_recortadas']:,}</b>
-                ({(1 - res['n_recortadas'] / n_sims) * 100:.1f}%)<br>
-                Estado inicial Markov: <b>{estado_nombre}</b><br>
-                Modo: <b>{"API tiempo real" if res['modo'] == 'api' else "DEMO histórico"}</b>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if res.get("clima") and res.get("factor_clima"):
-            clima  = res["clima"]
-            fclima = res["factor_clima"]
-            st.markdown(
-                f"""
-                <div style="background:#E8F5F1;border-radius:10px;
-                            padding:0.9rem 1rem;font-size:0.82rem;
-                            color:#1D6B52;margin-top:0.5rem;">
-                    <b>☁️ Factor climático OWM</b><br>
-                    {clima.descripcion}<br>
-                    Factor: ×{fclima.factor_multiplicador:.2f}
-                    · Alerta: <b>{fclima.nivel_alerta}</b>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+    st.divider()
 
-    # ── Banda de incertidumbre ────────────────────────────────────────
+    # ── Semáforo (card ancha independiente) ───────────────────────────
+    _, col_s, _ = st.columns([1, 3, 1])
+    with col_s:
+        render_semaforo(nivel, etiq_nivel, res["ratio"],
+                        estado_nombre, color_nivel)
+
+    st.divider()
+
+    # ── Banda de incertidumbre P10 – P50 – P90 ────────────────────────
     st.plotly_chart(
         render_banda_incertidumbre(res["p10"], res["p50"], res["p90"]),
         use_container_width=True,
         config={"displayModeBar": False},
     )
 
-    # ── Histograma ────────────────────────────────────────────────────
+    st.divider()
+
+    # ── Histograma de distribución ────────────────────────────────────
     st.plotly_chart(
         render_histograma(res["tiempos"], res["p10"], res["p50"], res["p90"]),
         use_container_width=True,
         config={"displayModeBar": False},
     )
 
+    st.divider()
+
+    # ── Mapa de la ruta ───────────────────────────────────────────────
+    if FOLIUM_OK and origen_activo and destino_activo:
+        st.markdown(
+            "<div style='font-size:0.85rem;font-weight:600;color:#444;"
+            "margin-bottom:0.4rem;'>🗺️ Ruta en el mapa</div>",
+            unsafe_allow_html=True,
+        )
+        # Mapa de sólo lectura — usa clave diferente al mapa interactivo
+        _m = __import__("folium").Map(
+            location=[origen_activo["lat"], origen_activo["lon"]],
+            zoom_start=12,
+            tiles="CartoDB positron",
+        )
+        if len(corredor_activo["waypoints"]) >= 2:
+            __import__("folium").PolyLine(
+                locations=corredor_activo["waypoints"],
+                color=corredor_activo["color_mapa"],
+                weight=6, opacity=0.85,
+                tooltip="Ruta simulada",
+            ).add_to(_m)
+        for _pt, _ico, _bg in [
+            (origen_activo,  "A", VERDE),
+            (destino_activo, "B", ROJO),
+        ]:
+            __import__("folium").Marker(
+                location=[_pt["lat"], _pt["lon"]],
+                icon=__import__("folium").DivIcon(html=(
+                    f"<div style='background:{_bg};color:white;"
+                    f"border-radius:50%;width:28px;height:28px;"
+                    f"display:flex;align-items:center;justify-content:center;"
+                    f"font-weight:900;font-size:13px;"
+                    f"box-shadow:0 2px 6px rgba(0,0,0,0.35);'>{_ico}</div>"
+                )),
+                tooltip=_pt["nombre"],
+            ).add_to(_m)
+        from streamlit_folium import st_folium as _stf
+        _stf(_m, key="mapa_resultados", width="100%", height=320,
+             returned_objects=[])
+        st.divider()
+
     st.caption(
-        f"Predicción generada con {n_sims:,} trayectorias Monte Carlo sobre "
-        f"la cadena de Markov calibrada con datos C5 CDMX 2023. "
-        f"Bandas P10/P50/P90 = percentiles 10, 50 y 90 de los tiempos simulados."
+        f"Predicción generada con {n_sims:,} trayectorias Monte Carlo · "
+        f"Cadena de Markov calibrada con datos C5 CDMX 2023 · "
+        f"P10/P50/P90 = percentiles 10, 50 y 90 de los tiempos simulados."
     )
+
+    # ── Detalles técnicos (colapsado por defecto) ─────────────────────
+    with st.expander("🔬 Detalles técnicos de la simulación", expanded=False):
+        col_d1, col_d2 = st.columns(2)
+        with col_d1:
+            st.markdown(
+                f"""
+                <div style="font-size:0.85rem;color:#444;line-height:1.8;">
+                    <b>Parámetros de simulación</b><br>
+                    Trayectorias totales: <code>{n_sims:,}</code><br>
+                    Completadas: <code>{n_sims - res['n_recortadas']:,}</code>
+                    &nbsp;({(1 - res['n_recortadas'] / n_sims) * 100:.1f}%)<br>
+                    Recortadas (timeout): <code>{res['n_recortadas']:,}</code><br>
+                    Estado inicial Markov: <code>{estado_nombre}</code><br>
+                    Modo de datos: <code>{"API tiempo real" if res['modo'] == 'api' else "DEMO histórico"}</code>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with col_d2:
+            st.markdown(
+                f"""
+                <div style="font-size:0.85rem;color:#444;line-height:1.8;">
+                    <b>Ruta calculada</b><br>
+                    Distancia: <code>{corredor_activo['distancia_km']} km</code><br>
+                    Fuente distancia: <code>{corredor_activo.get('fuente_ruta','—')}</code><br>
+                    Tiempo base (sin tráfico):
+                    <code>{corredor_activo.get('tiempo_base_min','—')} min</code><br>
+                    Ratio congestión: <code>{res['ratio']:.3f}</code>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        if res.get("clima") and res.get("factor_clima"):
+            clima  = res["clima"]
+            fclima = res["factor_clima"]
+            st.markdown(
+                f"""
+                <div style="background:#E8F5F1;border-radius:8px;
+                            padding:0.7rem 1rem;font-size:0.83rem;
+                            color:#1D6B52;margin-top:0.5rem;">
+                    <b>☁️ Factor climático OWM</b> —
+                    {clima.descripcion} ·
+                    Factor: ×{fclima.factor_multiplicador:.2f} ·
+                    Alerta: <b>{fclima.nivel_alerta}</b>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
 elif not (origen_activo and destino_activo):
     # ── Estado inicial: instrucciones ─────────────────────────────────
