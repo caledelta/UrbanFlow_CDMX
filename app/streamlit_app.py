@@ -41,6 +41,17 @@ st.set_page_config(
     page_icon="🚦",
     layout="wide",
     initial_sidebar_state="expanded",
+    menu_items={
+        "Get Help":    None,
+        "Report a bug": None,
+        "About": (
+            "### 🚦 VialAI\n"
+            "Predicción estocástica de tiempos de viaje en la ZMVM.\n\n"
+            "**Motor:** Simulación Monte Carlo + Cadenas de Markov\n\n"
+            "**Fuentes:** TomTom Traffic API · OpenWeatherMap · C5 CDMX\n\n"
+            "Diplomado en Ciencia de Datos · 2026"
+        ),
+    },
 )
 
 # ── Importaciones del proyecto ─────────────────────────────────────────
@@ -454,86 +465,149 @@ def _crear_cadena_calibrada() -> "MarkovTrafficChain | None":
 
 CSS = f"""
 <style>
-[data-testid="stAppViewContainer"] {{
-    background: #F8F9FB;
+/* ── Fondo general oscuro tipo Google Maps inmersivo ──────────────── */
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"] {{
+    background: #0D1B2A !important;
+    color: #F0F4F8;
 }}
+[data-testid="stHeader"] {{
+    background: #0D1B2A !important;
+    border-bottom: 1px solid rgba(29,158,117,0.25);
+}}
+[data-testid="stToolbar"] {{
+    background: #0D1B2A !important;
+}}
+/* Traducir "Rerun" → "Recargar" en la toolbar */
+[data-testid="stToolbarActions"] button[title="Rerun"] span {{
+    display: none;
+}}
+[data-testid="stToolbarActions"] button[title="Rerun"]::after {{
+    content: "Recargar";
+    font-size: 0.8rem;
+    color: #8BA7BE;
+}}
+/* Texto global */
+h1, h2, h3, h4, p, span, div, label {{
+    color: #F0F4F8;
+}}
+.stMarkdown p, .stMarkdown li {{
+    color: #C8D8E8;
+}}
+/* ── Sidebar ──────────────────────────────────────────────────────── */
 [data-testid="stSidebar"] {{
-    background: {AZUL_MARINO};
+    background: linear-gradient(180deg, #0D1B2A 0%, #112233 100%) !important;
+    border-right: 1px solid rgba(29,158,117,0.30);
 }}
 [data-testid="stSidebar"] * {{
     color: white !important;
 }}
 [data-testid="stSidebar"] .stSelectbox label,
 [data-testid="stSidebar"] .stSlider label {{
-    color: #C8D8E8 !important;
+    color: #8BA7BE !important;
     font-size: 0.85rem;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }}
 [data-testid="stSidebar"] .stSelectbox > div > div {{
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(29,158,117,0.40);
     border-radius: 8px;
+    color: white !important;
 }}
 /* Botones de ruta rápida en sidebar */
 [data-testid="stSidebar"] div.stButton > button {{
-    background: rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.07);
     color: white !important;
-    border: 1px solid rgba(255,255,255,0.22);
+    border: 1px solid rgba(29,158,117,0.35);
     border-radius: 8px;
-    font-size: 0.82rem;
-    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.55rem;
     width: 100%;
     text-align: left;
-    transition: background 0.15s;
+    transition: background 0.15s, border-color 0.15s;
 }}
 [data-testid="stSidebar"] div.stButton > button:hover {{
-    background: rgba(255,255,255,0.22);
+    background: rgba(29,158,117,0.18);
+    border-color: {VERDE};
 }}
-/* Botón principal Predecir */
+/* ── Botón principal Predecir ─────────────────────────────────────── */
 div.stButton > button[kind="primary"] {{
     background: {VERDE};
     color: white;
     border: none;
     border-radius: 10px;
-    padding: 0.6rem 1.4rem;
+    padding: 0.65rem 1.4rem;
     font-size: 1rem;
     font-weight: 700;
     width: 100%;
-    transition: background 0.2s;
+    transition: background 0.2s, box-shadow 0.2s;
+    box-shadow: 0 0 18px rgba(29,158,117,0.45);
 }}
 div.stButton > button[kind="primary"]:hover {{
     background: #17866A;
+    box-shadow: 0 0 26px rgba(29,158,117,0.65);
 }}
-/* Botones de modo mapa (A / B) */
-.modo-btn-activo {{
-    background: {AZUL_MARINO} !important;
-    color: white !important;
-    border-radius: 8px;
-    padding: 0.4rem 1rem;
-    font-weight: 700;
-    border: 2px solid white !important;
+/* ── Botones de modo mapa (A / B) — cuadrados con solo ícono ──────── */
+[data-testid="stHorizontalBlock"] div.stButton#btn_modo_a > button,
+[data-testid="stHorizontalBlock"] div.stButton#btn_modo_b > button {{
+    width: 56px !important;
+    height: 56px !important;
+    min-width: 56px !important;
+    padding: 0 !important;
+    font-size: 1.5rem !important;
+    border-radius: 12px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }}
+/* Modo activo glow */
+button[kind="primary"][data-testid*="modo"] {{
+    box-shadow: 0 0 14px rgba(29,158,117,0.7) !important;
+}}
+/* ── Cards / contenedores en área principal ───────────────────────── */
 [data-testid="stMetric"] {{
-    background: white;
+    background: #112233;
     border-radius: 12px;
     padding: 1rem 1.2rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid rgba(29,158,117,0.30);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.35);
 }}
 [data-testid="stMetricValue"] {{
-    color: {AZUL_MARINO};
+    color: {VERDE} !important;
     font-size: 2rem !important;
     font-weight: 800;
 }}
+/* ── Info / alert boxes ───────────────────────────────────────────── */
+[data-testid="stInfo"] {{
+    background: rgba(12,68,124,0.25);
+    border-left: 4px solid {AZUL_MARINO};
+    border-radius: 8px;
+}}
+/* ── Expanders ────────────────────────────────────────────────────── */
+[data-testid="stExpander"] {{
+    background: #112233;
+    border: 1px solid rgba(29,158,117,0.25);
+    border-radius: 10px;
+}}
+[data-testid="stExpander"] summary {{
+    color: #8BA7BE !important;
+    font-size: 0.85rem;
+}}
+/* ── Dividers ─────────────────────────────────────────────────────── */
+hr {{
+    border-color: rgba(29,158,117,0.25) !important;
+}}
+/* ── Semáforo ─────────────────────────────────────────────────────── */
 .semaforo-container {{
     display: flex;
     gap: 0.7rem;
     align-items: center;
-    background: white;
+    background: #112233;
     border-radius: 14px;
     padding: 1.2rem 1.4rem;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.40);
 }}
 .luz {{
     width: 44px; height: 44px;
@@ -541,10 +615,23 @@ div.stButton > button[kind="primary"]:hover {{
     opacity: 0.18;
     transition: opacity 0.3s;
 }}
-.luz.activa {{ opacity: 1.0; box-shadow: 0 0 16px 4px currentColor; }}
+.luz.activa {{ opacity: 1.0; box-shadow: 0 0 18px 5px currentColor; }}
 .luz-verde    {{ background: #1D9E75; color: #1D9E75; }}
 .luz-amarilla {{ background: #F5A623; color: #F5A623; }}
 .luz-roja     {{ background: #D0021B; color: #D0021B; }}
+/* ── Slider + selectbox en área principal ─────────────────────────── */
+[data-testid="stSlider"] {{
+    color: {VERDE};
+}}
+[data-testid="stSelectbox"] > div > div {{
+    background: #112233;
+    border: 1px solid rgba(29,158,117,0.35);
+    color: #F0F4F8;
+}}
+/* ── Caption / small text ─────────────────────────────────────────── */
+.stCaption, [data-testid="stCaptionContainer"] p {{
+    color: #8BA7BE !important;
+}}
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
@@ -571,6 +658,8 @@ _DEFAULTS: dict = {
     # Selectbox origen y destino (controlados programáticamente)
     "sel_origen":  OPCION_MAPA,
     "sel_destino": OPCION_MAPA,
+    # Capa de mapa activa: "estandar" | "oscuro" | "trafico"
+    "capa_mapa": "estandar",
 }
 for _k, _v in _DEFAULTS.items():
     if _k not in st.session_state:
@@ -584,19 +673,28 @@ for _k, _v in _DEFAULTS.items():
 with st.sidebar:
 
     # ── Logo y tagline ────────────────────────────────────────────────
-    st.markdown(
-        f"""
-        <div style="text-align:center; padding:1.2rem 0 0.6rem;">
-            <div style="font-size:3rem; line-height:1;">🚦</div>
-            <div style="font-size:1.9rem; font-weight:900;
-                        color:white; letter-spacing:-0.02em;">VialAI</div>
-            <div style="font-size:0.78rem; color:#A8C4D8;
-                        font-style:italic; margin-top:0.2rem;">
-                Predicción inteligente de tráfico en la ZMVM
+    _logo_path = ROOT / "app" / "assets" / "logo_vialai.png"
+    if _logo_path.exists():
+        st.image(str(_logo_path), use_container_width=True)
+    else:
+        st.markdown(
+            """
+            <div style="text-align:center;padding:1.2rem 0 0.3rem;">
+                <div style="font-size:2rem;font-weight:800;
+                            letter-spacing:-0.02em;line-height:1.1;">
+                    <span style="color:#0C447C;">Vial</span><span
+                          style="color:#1D9E75;">AI</span>
+                </div>
+                <div style="font-size:0.72rem;color:#8BA7BE;
+                            margin-top:0.25rem;letter-spacing:.04em;">
+                    Predicción inteligente de tráfico · ZMVM
+                </div>
             </div>
-            <hr style="border-color:rgba(255,255,255,0.18);margin:1rem 0 0.5rem;">
-        </div>
-        """,
+            """,
+            unsafe_allow_html=True,
+        )
+    st.markdown(
+        "<hr style='border-color:rgba(29,158,117,0.30);margin:0.6rem 0 0.4rem;'>",
         unsafe_allow_html=True,
     )
 
@@ -630,7 +728,7 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
     else:
-        st.caption("Sin fijar — elige del mapa o de la lista")
+        st.caption("Selecciona en el mapa o lista")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -662,7 +760,7 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
     else:
-        st.caption("Sin fijar — elige del mapa o de la lista")
+        st.caption("Selecciona en el mapa o lista")
 
     # ── Distancia calculada ───────────────────────────────────────────
     st.markdown("<hr style='border-color:rgba(255,255,255,0.15);'>",
@@ -998,8 +1096,9 @@ def render_gauge(p50: float, p10: float, p90: float,
     fig.update_layout(
         height=320,
         margin=dict(t=60, b=20, l=40, r=40),
-        paper_bgcolor="white",
-        font={"family": "Arial"},
+        paper_bgcolor="#112233",
+        plot_bgcolor="#112233",
+        font={"family": "Arial", "color": "#F0F4F8"},
     )
     return fig
 
@@ -1028,11 +1127,13 @@ def render_banda_incertidumbre(p10: float, p50: float,
         height=160, margin=dict(t=30, b=20, l=10, r=10),
         xaxis=dict(title="Tiempo de viaje (minutos)",
                    range=[max(0, p10 - 10), p90 + 10],
-                   showgrid=True, gridcolor="#EEE"),
+                   showgrid=True, gridcolor="rgba(255,255,255,0.08)",
+                   tickfont=dict(color="#8BA7BE"),
+                   titlefont=dict(color="#8BA7BE")),
         yaxis=dict(visible=False, range=[0, 1]),
-        paper_bgcolor="white", plot_bgcolor="white",
+        paper_bgcolor="#0D1B2A", plot_bgcolor="#0D1B2A",
         title=dict(text="Banda de incertidumbre P10 – P50 – P90",
-                   font=dict(size=13, color="#444"), x=0.5),
+                   font=dict(size=13, color="#C8D8E8"), x=0.5),
     )
     return fig
 
@@ -1055,14 +1156,19 @@ def render_histograma(tiempos: np.ndarray, p10: float,
                       annotation_font=dict(size=11, color=col))
     fig.update_layout(
         title=dict(text=f"Distribución de {len(tiempos):,} tiempos simulados",
-                   font=dict(size=13, color="#444"), x=0.5),
-        xaxis_title="Tiempo de viaje (minutos)", yaxis_title="Frecuencia",
-        paper_bgcolor="white", plot_bgcolor="white",
+                   font=dict(size=13, color="#C8D8E8"), x=0.5),
+        xaxis_title="Tiempo de viaje (minutos)",
+        yaxis_title="Frecuencia",
+        xaxis=dict(title_font=dict(color="#8BA7BE"),
+                   tickfont=dict(color="#8BA7BE")),
+        yaxis=dict(title_font=dict(color="#8BA7BE"),
+                   tickfont=dict(color="#8BA7BE")),
+        paper_bgcolor="#0D1B2A", plot_bgcolor="#0D1B2A",
         height=280, margin=dict(t=40, b=40, l=40, r=20),
         bargap=0.05, showlegend=False,
     )
-    fig.update_xaxes(showgrid=True, gridcolor="#EEE")
-    fig.update_yaxes(showgrid=True, gridcolor="#EEE")
+    fig.update_xaxes(showgrid=True, gridcolor="rgba(255,255,255,0.07)")
+    fig.update_yaxes(showgrid=True, gridcolor="rgba(255,255,255,0.07)")
     return fig
 
 
@@ -1073,14 +1179,14 @@ def render_semaforo(nivel: str, etiqueta: str, ratio: float,
     ar = "activa" if nivel == "rojo"     else ""
     st.markdown(
         f"""
-        <div style="background:white;border-radius:14px;
+        <div style="background:#112233;border-radius:14px;
                     border:2px solid {color_nivel};
                     padding:1.4rem 1.8rem;
                     display:grid;
                     grid-template-columns:72px 1fr;
                     align-items:center;
                     gap:1.5rem;
-                    box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+                    box-shadow:0 2px 18px rgba(0,0,0,0.40);">
             <!-- columna izquierda: semáforo centrado -->
             <div style="display:flex;flex-direction:column;
                         align-items:center;gap:7px;">
@@ -1114,11 +1220,12 @@ def render_semaforo(nivel: str, etiqueta: str, ratio: float,
 # ══════════════════════════════════════════════════════════════════════
 
 def render_mapa_od(
-    origen:    dict | None,
-    destino:   dict | None,
-    waypoints: list[tuple[float, float]],
-    color:     str = AZUL_MARINO,
-    height:    int = 400,
+    origen:     dict | None,
+    destino:    dict | None,
+    waypoints:  list[tuple[float, float]],
+    color:      str = AZUL_MARINO,
+    height:     int = 400,
+    capa_mapa:  str = "estandar",
 ) -> dict | None:
     """
     Mapa Folium interactivo con soporte de clic para fijar origen (A)
@@ -1142,9 +1249,34 @@ def render_mapa_od(
     else:
         centro = CDMX_CENTRO; zoom = 11
 
+    # ── Selección de capa base ────────────────────────────────────────
+    _TILES_BASE = {
+        "estandar": ("CartoDB positron",    "Estándar"),
+        "oscuro":   ("CartoDB dark_matter", "Oscuro"),
+        "trafico":  ("CartoDB positron",    "Tráfico"),
+    }
+    _base_tile, _ = _TILES_BASE.get(capa_mapa, _TILES_BASE["estandar"])
+
     m = folium.Map(location=centro, zoom_start=zoom,
-                   tiles="CartoDB positron",
+                   tiles=_base_tile,
                    prefer_canvas=True)
+
+    # ── Capa de tráfico TomTom (overlay) ─────────────────────────────
+    if capa_mapa == "trafico":
+        _tt_key = os.getenv("TOMTOM_API_KEY", "")
+        if _tt_key:
+            folium.TileLayer(
+                tiles=(
+                    f"https://api.tomtom.com/traffic/map/4/tile/"
+                    f"relative-delay/{{z}}/{{x}}/{{y}}.png?key={_tt_key}"
+                ),
+                name="Tráfico TomTom",
+                attr="© TomTom",
+                overlay=True,
+                control=True,
+                opacity=0.75,
+            ).add_to(m)
+            folium.LayerControl(collapsed=False).add_to(m)
 
     # Polilínea del trayecto (sólo si hay al menos 2 puntos)
     if len(waypoints) >= 2:
@@ -1312,26 +1444,50 @@ with col_info:
     else:
         st.info("Define origen y destino para ver la información del trayecto.")
 
-    # ── Botones para cambiar modo del clic en el mapa ─────────────────
-    st.markdown("<br>**Modo de clic en el mapa:**", unsafe_allow_html=True)
-    bcol1, bcol2 = st.columns(2)
+    # ── Botones de modo clic — íconos cuadrados 56×56 px ─────────────
+    st.markdown(
+        "<div style='font-size:0.72rem;color:#8BA7BE;text-transform:uppercase;"
+        "letter-spacing:.05em;font-weight:600;margin-bottom:6px;'>"
+        "Clic en mapa</div>",
+        unsafe_allow_html=True,
+    )
+    # CSS específico para estos dos botones cuadrados
+    st.markdown(
+        """
+        <style>
+        div[data-testid="column"]:has(> div > div > button[kind="primary"]) button,
+        button[data-testid="baseButton-secondary"][aria-label="📍"],
+        button[data-testid="baseButton-primary"][aria-label="📍"],
+        button[data-testid="baseButton-secondary"][aria-label="🏁"],
+        button[data-testid="baseButton-primary"][aria-label="🏁"] {
+            width: 56px !important; height: 56px !important;
+            min-width: 56px !important; max-width: 56px !important;
+            padding: 0 !important; font-size: 1.6rem !important;
+            border-radius: 12px !important;
+            display: flex; align-items: center; justify-content: center;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    bcol1, bcol2, _ = st.columns([1, 1, 3])
     with bcol1:
         activo_a = st.session_state.modo_click == "A"
         if st.button(
-            f"{'▶' if activo_a else '○'} 📍 Origen (A)",
+            "📍",
             key="btn_modo_a",
+            help="Establecer origen (A)",
             type="primary" if activo_a else "secondary",
-            use_container_width=True,
         ):
             st.session_state.modo_click = "A"
             st.rerun()
     with bcol2:
         activo_b = st.session_state.modo_click == "B"
         if st.button(
-            f"{'▶' if activo_b else '○'} 🏁 Destino (B)",
+            "🏁",
             key="btn_modo_b",
+            help="Establecer destino (B)",
             type="primary" if activo_b else "secondary",
-            use_container_width=True,
         ):
             st.session_state.modo_click = "B"
             st.rerun()
@@ -1351,12 +1507,30 @@ with col_info:
 
 
 with col_mapa:
+    # ── Selector de capa de mapa ──────────────────────────────────────
+    _opciones_capa = {
+        "🗺️ Estándar":  "estandar",
+        "🌑 Oscuro":     "oscuro",
+        "🚗 Tráfico":    "trafico",
+    }
+    _capa_display = st.radio(
+        "Capa",
+        options=list(_opciones_capa.keys()),
+        index=list(_opciones_capa.values()).index(
+            st.session_state.get("capa_mapa", "estandar")
+        ),
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+    st.session_state.capa_mapa = _opciones_capa[_capa_display]
+
     # Renderizar mapa y capturar clic
     mapa_out = render_mapa_od(
         origen_activo,
         destino_activo,
         waypoints_activos,
         color=st.session_state.color_ruta,
+        capa_mapa=st.session_state.capa_mapa,
     )
 
     # ── Procesar clic en el mapa ──────────────────────────────────────
@@ -1452,10 +1626,10 @@ if predecir and corredor_activo:
     )
     # Fila 2: P10 / P90 / Banda / Velocidad — cards HTML (sin truncamiento)
     _CARD = (
-        "<div style='background:white;border:1px solid #E4E9F0;"
+        "<div style='background:#112233;border:1px solid rgba(29,158,117,0.30);"
         "border-radius:10px;padding:1rem 1.2rem;min-width:160px;"
-        "box-shadow:0 1px 4px rgba(0,0,0,0.05);'>"
-        "<div style='font-size:12px;color:#888;white-space:nowrap;"
+        "box-shadow:0 2px 10px rgba(0,0,0,0.30);'>"
+        "<div style='font-size:12px;color:#8BA7BE;white-space:nowrap;"
         "text-transform:uppercase;letter-spacing:.04em;'>{label}</div>"
         "<div style='font-size:28px;font-weight:700;color:{vcolor};"
         "white-space:nowrap;line-height:1.2;margin-top:4px;'>{value}</div>"
@@ -1647,3 +1821,90 @@ elif not (origen_activo and destino_activo):
         "Luego pulsa **🚀 Predecir trayecto**.",
         icon="🗺️",
     )
+
+# ══════════════════════════════════════════════════════════════════════
+# PIE DE PÁGINA
+# ══════════════════════════════════════════════════════════════════════
+
+st.markdown(
+    f"""
+    <div style="background:#0a1628;border-top:1px solid rgba(29,158,117,0.25);
+                margin-top:3rem;padding:2rem 2.5rem 1.5rem;border-radius:0 0 12px 12px;">
+
+        <!-- Logo y descripción -->
+        <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;">
+            <div style="font-size:1.5rem;font-weight:800;letter-spacing:-0.02em;">
+                <span style="color:{AZUL_MARINO};">Vial</span><span
+                      style="color:{VERDE};">AI</span>
+            </div>
+            <div style="color:#8BA7BE;font-size:0.8rem;line-height:1.4;">
+                Predicción estocástica de tiempos de viaje · ZMVM<br>
+                Motor: Monte Carlo + Cadenas de Markov
+            </div>
+        </div>
+
+        <!-- Cards de respaldo matemático -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);
+                    gap:0.8rem;margin-bottom:1.4rem;">
+            <a href="https://es.wikipedia.org/wiki/Cadena_de_Márkov"
+               target="_blank" style="text-decoration:none;">
+                <div style="background:#112233;border:1px solid rgba(29,158,117,0.25);
+                            border-radius:8px;padding:0.7rem 0.9rem;
+                            transition:border-color 0.2s;"
+                     onmouseover="this.style.borderColor='{VERDE}'"
+                     onmouseout="this.style.borderColor='rgba(29,158,117,0.25)'">
+                    <div style="font-size:0.75rem;color:{VERDE};
+                                font-weight:700;margin-bottom:3px;">
+                        📊 Cadenas de Markov
+                    </div>
+                    <div style="font-size:0.7rem;color:#8BA7BE;line-height:1.4;">
+                        Modelo de transición entre estados de tráfico
+                        (fluido / lento / congestionado).
+                    </div>
+                </div>
+            </a>
+            <a href="https://es.wikipedia.org/wiki/Método_de_Montecarlo"
+               target="_blank" style="text-decoration:none;">
+                <div style="background:#112233;border:1px solid rgba(29,158,117,0.25);
+                            border-radius:8px;padding:0.7rem 0.9rem;"
+                     onmouseover="this.style.borderColor='{VERDE}'"
+                     onmouseout="this.style.borderColor='rgba(29,158,117,0.25)'">
+                    <div style="font-size:0.75rem;color:{VERDE};
+                                font-weight:700;margin-bottom:3px;">
+                        🎲 Simulación Monte Carlo
+                    </div>
+                    <div style="font-size:0.7rem;color:#8BA7BE;line-height:1.4;">
+                        10 000 trayectorias estocásticas para estimar
+                        la distribución del tiempo de viaje.
+                    </div>
+                </div>
+            </a>
+            <a href="https://docs.scipy.org/doc/scipy/reference/stats.html"
+               target="_blank" style="text-decoration:none;">
+                <div style="background:#112233;border:1px solid rgba(29,158,117,0.25);
+                            border-radius:8px;padding:0.7rem 0.9rem;"
+                     onmouseover="this.style.borderColor='{VERDE}'"
+                     onmouseout="this.style.borderColor='rgba(29,158,117,0.25)'">
+                    <div style="font-size:0.75rem;color:{VERDE};
+                                font-weight:700;margin-bottom:3px;">
+                        📐 Distribuciones de probabilidad
+                    </div>
+                    <div style="font-size:0.7rem;color:#8BA7BE;line-height:1.4;">
+                        Distribuciones Normal truncada por estado vial
+                        implementadas con SciPy Stats.
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Copyright -->
+        <div style="text-align:center;font-size:0.72rem;color:#4A6070;
+                    border-top:1px solid rgba(255,255,255,0.06);
+                    padding-top:0.9rem;">
+            © 2026 VialAI · Diplomado en Ciencia de Datos ·
+            Datos: TomTom · OpenWeatherMap · C5 CDMX
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
