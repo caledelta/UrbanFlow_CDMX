@@ -44,6 +44,11 @@ from src.ingestion.tomtom_client import (
     TomTomTrafficClient,
     TomTomAPIError,
 )
+from src.ingestion.tomtom_routing import (
+    TomTomRoutingClient,
+    RutaVial,
+    _fallback_haversine,
+)
 from src.ingestion.weather_client import (
     OpenWeatherMapClient,
     CondicionClimatica,
@@ -221,8 +226,9 @@ class PipelineIntegrador:
 
     def __init__(
         self,
-        tomtom: TomTomTrafficClient,
-        owm:    OpenWeatherMapClient,
+        tomtom:  TomTomTrafficClient,
+        owm:     OpenWeatherMapClient,
+        routing: TomTomRoutingClient | None = None,
     ) -> None:
         if not isinstance(tomtom, TomTomTrafficClient):
             raise TypeError(
@@ -234,8 +240,14 @@ class PipelineIntegrador:
                 f"'owm' debe ser OpenWeatherMapClient, "
                 f"se recibió {type(owm).__name__}."
             )
-        self.tomtom = tomtom
-        self.owm    = owm
+        if routing is not None and not isinstance(routing, TomTomRoutingClient):
+            raise TypeError(
+                f"'routing' debe ser TomTomRoutingClient o None, "
+                f"se recibió {type(routing).__name__}."
+            )
+        self.tomtom  = tomtom
+        self.owm     = owm
+        self.routing = routing
 
     # ------------------------------------------------------------------
     # API pública — contexto en tiempo real
@@ -345,8 +357,8 @@ class PipelineIntegrador:
         coordenadas_corredor: list[tuple[float, float]],
         lat_clima:            float,
         lon_clima:            float,
-        distancia_km:         float,
         cadena:               MarkovTrafficChain,
+        distancia_km:         float | None = None,
         n_simulaciones:       int = MonteCarloEngine.N_SIMULACIONES_DEFAULT,
         **kwargs: Any,
     ) -> tuple[ContextoViaje, ResultadoSimulacion]:
@@ -356,14 +368,21 @@ class PipelineIntegrador:
         Combina ``obtener_contexto()`` + ``crear_motor()`` + ``correr()``
         en una sola llamada para casos de uso directos.
 
+        Si ``distancia_km`` es ``None`` y el pipeline se construyó con un
+        ``TomTomRoutingClient``, la distancia real por carretera se calcula
+        automáticamente usando el primer y último punto de
+        ``coordenadas_corredor``.  Si no hay cliente de routing, se aplica
+        el factor empírico Haversine × 1.4.
+
         Parámetros
         ----------
         coordenadas_corredor : list de (lat, lon)
         lat_clima, lon_clima : float
-        distancia_km : float
-            Distancia del recorrido en kilómetros.
         cadena : MarkovTrafficChain
             Cadena ya ajustada con ``fit()``.
+        distancia_km : float, opcional
+            Distancia del recorrido en kilómetros.  Si se omite, se calcula
+            automáticamente.
         n_simulaciones : int, opcional
         **kwargs
             Parámetros adicionales para ``MonteCarloEngine``.
@@ -372,11 +391,49 @@ class PipelineIntegrador:
         --------
         tuple[ContextoViaje, ResultadoSimulacion]
         """
+        # Auto-calcular distancia si no se proporcionó
+        if distancia_km is None:
+            distancia_km = self._calcular_distancia_corredor(
+                coordenadas_corredor
+            )
+
         contexto  = self.obtener_contexto(coordenadas_corredor, lat_clima, lon_clima)
         consulta  = contexto.a_consulta(distancia_km)
         motor     = contexto.crear_motor(cadena, n_simulaciones=n_simulaciones, **kwargs)
         resultado = motor.correr(consulta)
         return contexto, resultado
+
+    def _calcular_distancia_corredor(
+        self,
+        coordenadas_corredor: list[tuple[float, float]],
+    ) -> float:
+        """
+        Calcula la distancia del corredor entre su primer y último punto.
+
+        Usa ``TomTomRoutingClient.calcular_ruta_con_fallback`` si está
+        disponible; si no, aplica Haversine × 1.4.
+        """
+        if len(coordenadas_corredor) < 2:
+            raise ValueError(
+                "'coordenadas_corredor' debe tener al menos 2 puntos."
+            )
+        lat1, lon1 = coordenadas_corredor[0]
+        lat2, lon2 = coordenadas_corredor[-1]
+
+        if self.routing is not None:
+            ruta = self.routing.calcular_ruta_con_fallback(lat1, lon1, lat2, lon2)
+            logger.info(
+                "Distancia corredor (routing=%s): %.2f km",
+                ruta.fuente, ruta.distancia_km,
+            )
+            return ruta.distancia_km
+
+        ruta = _fallback_haversine(lat1, lon1, lat2, lon2)
+        logger.info(
+            "Distancia corredor (fallback haversine): %.2f km",
+            ruta.distancia_km,
+        )
+        return ruta.distancia_km
 
 
 # ──────────────────────────────────────────────────────────────────────

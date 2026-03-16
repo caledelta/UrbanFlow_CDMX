@@ -60,6 +60,12 @@ except ImportError:
     MODULOS_PIPELINE_OK = False
 
 try:
+    from src.ingestion.tomtom_routing import TomTomRoutingClient, RutaVial
+    MODULOS_ROUTING_OK = True
+except ImportError:
+    MODULOS_ROUTING_OK = False
+
+try:
     import folium
     from streamlit_folium import st_folium
     FOLIUM_OK = True
@@ -375,6 +381,54 @@ def interpolar_waypoints(
             for f in fracs]
 
 
+# ──────────────────────────────────────────────────────────────────────
+# RUTA REAL POR CARRETERA (TomTom Routing API + fallback Haversine×1.4)
+# ──────────────────────────────────────────────────────────────────────
+
+@st.cache_data(show_spinner=False, ttl=3600)
+def _obtener_ruta(
+    lat1: float, lon1: float,
+    lat2: float, lon2: float,
+) -> dict:
+    """
+    Ruta real A→B.  Intenta TomTom Routing API; si falla o no hay key,
+    usa Haversine × 1.4 como estimación.
+
+    Resultado cacheado 1 hora por par de coordenadas.
+
+    Devuelve
+    --------
+    dict con claves:
+        distancia_km    – distancia real por carretera (km)
+        tiempo_base_min – tiempo sin tráfico (min)
+        waypoints       – lista de (lat, lon) para dibujar en el mapa
+        fuente          – "tomtom" | "haversine_estimada"
+    """
+    api_key = os.getenv("TOMTOM_API_KEY", "")
+    if api_key and MODULOS_ROUTING_OK:
+        try:
+            cliente = TomTomRoutingClient(api_key=api_key)
+            ruta    = cliente.calcular_ruta(lat1, lon1, lat2, lon2)
+            return {
+                "distancia_km":    ruta.distancia_km,
+                "tiempo_base_min": ruta.tiempo_base_min,
+                "waypoints":       ruta.waypoints,
+                "fuente":          ruta.fuente,
+            }
+        except Exception:
+            pass  # caer al fallback silenciosamente
+
+    # Fallback: Haversine × 1.4
+    dist_lineal = calcular_distancia(lat1, lon1, lat2, lon2)
+    dist_km     = round(dist_lineal * 1.4, 2)
+    return {
+        "distancia_km":    dist_km,
+        "tiempo_base_min": round(dist_km / 30 * 60, 1),
+        "waypoints":       interpolar_waypoints(lat1, lon1, lat2, lon2, n=8),
+        "fuente":          "haversine_estimada",
+    }
+
+
 # ══════════════════════════════════════════════════════════════════════
 # CADENA DE MARKOV PRECALIBRADA
 # ══════════════════════════════════════════════════════════════════════
@@ -647,14 +701,20 @@ with st.sidebar:
     destino_activo = st.session_state.destino
 
     if origen_activo and destino_activo:
-        dist_km = calcular_distancia(
+        _ruta_sidebar = _obtener_ruta(
             origen_activo["lat"],  origen_activo["lon"],
             destino_activo["lat"], destino_activo["lon"],
         )
+        dist_km     = _ruta_sidebar["distancia_km"]
+        _fuente_ico = "🛣️" if _ruta_sidebar["fuente"] == "tomtom" else "📐"
+        _fuente_tip = ("Ruta real por carretera (TomTom)"
+                       if _ruta_sidebar["fuente"] == "tomtom"
+                       else "Estimación: Haversine × 1.4")
         st.markdown(
-            f"<div style='text-align:center;padding:0.5rem;background:rgba(29,158,117,0.2);"
-            f"border-radius:8px;font-size:0.9rem;color:white;'>"
-            f"📏 Distancia: <b>{dist_km} km</b></div>",
+            f"<div style='text-align:center;padding:0.5rem;"
+            f"background:rgba(29,158,117,0.2);border-radius:8px;"
+            f"font-size:0.9rem;color:white;' title='{_fuente_tip}'>"
+            f"{_fuente_ico} Distancia: <b>{dist_km} km</b></div>",
             unsafe_allow_html=True,
         )
     else:
@@ -662,7 +722,7 @@ with st.sidebar:
         st.markdown(
             "<div style='text-align:center;padding:0.4rem;background:rgba(255,255,255,0.07);"
             "border-radius:8px;font-size:0.8rem;color:#8AADCA;'>"
-            "📏 Define origen y destino para calcular la distancia</div>",
+            "🛣️ Define origen y destino para calcular la distancia</div>",
             unsafe_allow_html=True,
         )
 
@@ -741,33 +801,29 @@ with st.sidebar:
 # ══════════════════════════════════════════════════════════════════════
 
 if origen_activo and destino_activo:
-    # Calcular distancia final (puede que ya se calculó arriba, pero es barata)
-    dist_km_activo = calcular_distancia(
+    # Ruta real por carretera (TomTom Routing API o fallback Haversine×1.4)
+    # El resultado está cacheado 1 h, así que los rerenders son instantáneos.
+    _ruta = _obtener_ruta(
         origen_activo["lat"],  origen_activo["lon"],
         destino_activo["lat"], destino_activo["lon"],
     )
-    # Waypoints: usar los de la ruta rápida si existen, si no interpolar
-    if st.session_state.waypoints_activos:
-        waypoints_activos = st.session_state.waypoints_activos
-    else:
-        waypoints_activos = interpolar_waypoints(
-            origen_activo["lat"],  origen_activo["lon"],
-            destino_activo["lat"], destino_activo["lon"],
-            n=6,
-        )
+    dist_km_activo    = _ruta["distancia_km"]
+    waypoints_activos = _ruta["waypoints"]   # geometría real o interpolada
 
     corredor_activo: dict | None = {
-        "distancia_km": dist_km_activo,
-        "lat_clima":    origen_activo["lat"],
-        "lon_clima":    origen_activo["lon"],
-        "waypoints":    waypoints_activos,
-        "color_mapa":   st.session_state.color_ruta,
-        "descripcion":  (f"{origen_activo['nombre']} → {destino_activo['nombre']} "
-                         f"· {dist_km_activo} km"),
+        "distancia_km":    dist_km_activo,
+        "tiempo_base_min": _ruta["tiempo_base_min"],
+        "fuente_ruta":     _ruta["fuente"],
+        "lat_clima":       origen_activo["lat"],
+        "lon_clima":       origen_activo["lon"],
+        "waypoints":       waypoints_activos,
+        "color_mapa":      st.session_state.color_ruta,
+        "descripcion":     (f"{origen_activo['nombre']} → {destino_activo['nombre']} "
+                            f"· {dist_km_activo} km"),
     }
 else:
-    corredor_activo = None
-    dist_km_activo  = None
+    corredor_activo   = None
+    dist_km_activo    = None
     waypoints_activos = []
 
 
@@ -1320,11 +1376,17 @@ if predecir and corredor_activo:
     st.markdown("---")
     origen_label  = origen_activo["nombre"] if origen_activo else "?"
     destino_label = destino_activo["nombre"] if destino_activo else "?"
+    _fuente_ruta = corredor_activo.get("fuente_ruta", "haversine_estimada")
+    _icono_ruta  = "🛣️" if _fuente_ruta == "tomtom" else "📐"
+    _tip_ruta    = ("ruta real TomTom"
+                    if _fuente_ruta == "tomtom"
+                    else "estimación Haversine×1.4")
     st.markdown(
         f"### Resultados · {origen_label} → {destino_label}  "
         f"<span style='font-size:0.85rem;color:#888;font-weight:400;'>"
         f"{hora_salida:02d}:00 h · {dia_nombre} · "
-        f"{corredor_activo['distancia_km']} km</span>",
+        f"{_icono_ruta} {corredor_activo['distancia_km']} km "
+        f"<span style='font-size:0.75rem;'>({_tip_ruta})</span></span>",
         unsafe_allow_html=True,
     )
 
