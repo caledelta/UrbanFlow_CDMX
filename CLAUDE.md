@@ -40,6 +40,19 @@ Sistema de predicción de tiempos de viaje en la Zona Metropolitana del Valle de
 | OpenWeatherMap API | Clima histórico CDMX | Horario |
 | SEMOVI datos abiertos | Aforos vehiculares | Batch histórico |
 
+### 1B. Conexión y Autenticación por Fuente
+
+Documentado en `notebooks/EDA_UrbanFlow_CDMX_v3.ipynb §1B`. Las API keys se leen **exclusivamente desde `.env`** — nunca se escriben en el código.
+
+| # | Fuente | Costo | Autenticación | Límite gratuito |
+|---|---|---|---|---|
+| 1 | C5 CDMX | Gratis | Sin key | Sin límite |
+| 2 | Metrobús GTFS-RT | Gratis | Sin key | Sin límite |
+| 3 | TomTom Traffic API | Gratis | `TOMTOM_API_KEY` | 2 500 req/día |
+| 4 | OpenWeatherMap API | Gratis | `OPENWEATHERMAP_API_KEY` | 1 000 req/día |
+| 5 | SEMOVI datos abiertos | Gratis | Sin key | Sin límite |
+| + | Google Maps JS (dashboard) | Gratis | `GOOGLE_MAPS_API_KEY` | 28 000 cargas/mes |
+
 ---
 
 ## Arquitectura de Directorios
@@ -82,6 +95,30 @@ UrbanFlow_CDMX/
 - `POST /predict/travel-time` — retorna P10/P50/P90 para un origen–destino dado
 - `GET /traffic/realtime` — estado actual de congestión por zona
 - `GET /health` — liveness check
+
+### 5B. Perturbaciones Contextuales (Markov)
+
+Documentado en `notebooks/EDA_UrbanFlow_CDMX_v3.ipynb §5B`. La calibración base de la cadena de Markov supone un día hábil típico, pero la ZMVM tiene eventos **atípicos recurrentes** que alteran el patrón de congestión sin dejar huella directa en los datos C5.
+
+**Mecanismo:** se aplica un `factor` multiplicador sobre `P[i, 2]` (probabilidad de transitar a estado Congestionado) y se renormalizan las columnas restantes. La matriz resultante sigue siendo estocástica válida (suma de filas = 1).
+
+```
+P_mod[i, 2] = clip(P_base[i, 2] × factor, 0, 1)
+P_mod[i, 0..1] se renormalizan para que cada fila sume 1
+```
+
+**Catálogo de perturbaciones implementadas:**
+
+| Tipo de evento | Ejemplo real CDMX | Factor |
+|---|---|---|
+| Cierre de línea Metro | Línea 1 (2021–22), Línea 12 (2022) | 1.55 |
+| Evento masivo (recinto) | City Banamex, Foro Sol, Azteca | 1.40 |
+| Protesta / marcha | 9 de marzo, marchas CNTE | 1.70 |
+| Día festivo con cierres | 15 sep (Grito), 16 sep (Desfile) | 1.80 |
+| Temporada baja | Navidad, Año Nuevo | 0.60 |
+| Día hábil típico (base) | — | 1.00 |
+
+La función `seleccionar_perturbacion(fecha, alcaldia)` devuelve el factor más severo aplicable dado un datetime y alcaldía. Se integra en el motor Monte Carlo para sesgar la distribución de velocidades antes de la simulación.
 
 ---
 

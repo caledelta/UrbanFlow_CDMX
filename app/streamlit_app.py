@@ -20,12 +20,14 @@ si no, usa el modo DEMO con datos precalibrados.
 
 from __future__ import annotations
 
+import base64
 import math
 import os
+import shutil
 import sys
 from pathlib import Path
 
-# ── Raíz del proyecto en sys.path ─────────────────────────────────────
+# ── Raíz del proyecto en sys.path ───────────────────────────────────────────
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -35,7 +37,7 @@ import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 
-# ── Configuración de página (primera llamada a Streamlit) ──────────────
+# ── Configuración de página (primera llamada a Streamlit) ────────────────────
 st.set_page_config(
     page_title="VialAI — Predicción de tráfico ZMVM",
     page_icon="🚦",
@@ -54,7 +56,7 @@ st.set_page_config(
     },
 )
 
-# ── Importaciones del proyecto ─────────────────────────────────────────
+# ── Importaciones del proyecto ───────────────────────────────────────────────
 try:
     from src.simulation.markov_chain import MarkovTrafficChain
     from src.simulation.monte_carlo import MonteCarloEngine, ConsultaViaje, VELOCIDAD_PARAMS
@@ -84,9 +86,9 @@ except ImportError:
     FOLIUM_OK = False
 
 
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
 # CONSTANTES DE COLOR
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
 
 AZUL_MARINO = "#0C447C"
 VERDE       = "#1D9E75"
@@ -94,16 +96,13 @@ AMARILLO    = "#F5A623"
 ROJO        = "#D0021B"
 
 
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
 # CATÁLOGO DE PUNTOS CONOCIDOS DE LA ZMVM
-# ── Usado para autocompletado en los selectbox de Origen / Destino ──
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
 
-OPCION_MAPA = "— Elegir en el mapa —"
+OPCION_MAPA = "📍 Elegir en el mapa 📍"
 
-# (lat, lon) WGS84 — ~80 puntos representativos
 PUNTOS_CDMX: dict[str, tuple[float, float]] = {
-    # ── Hitos y monumentos ────────────────────────────────────────────
     "Zócalo · Plaza de la Constitución":        (19.4326, -99.1332),
     "Ángel de la Independencia":                (19.4270, -99.1676),
     "Monumento a la Revolución":                (19.4385, -99.1573),
@@ -113,7 +112,6 @@ PUNTOS_CDMX: dict[str, tuple[float, float]] = {
     "Palacio de los Deportes":                  (19.4089, -99.0866),
     "Plaza Garibaldi":                          (19.4425, -99.1381),
     "Arena México":                             (19.4281, -99.1470),
-    # ── Aeropuertos y terminales de transporte ────────────────────────
     "AICM Terminal 1":                          (19.4363, -99.0721),
     "AICM Terminal 2":                          (19.4345, -99.0785),
     "TAPO · Terminal Oriente":                  (19.4255, -99.1139),
@@ -122,34 +120,28 @@ PUNTOS_CDMX: dict[str, tuple[float, float]] = {
     "Terminal Sur · Tasqueña":                  (19.3704, -99.1380),
     "Reforma · Buenavista":                     (19.4500, -99.1550),
     "Buenavista · Tren Suburbano":              (19.4508, -99.1546),
-    # ── Corredores viales (extremos de las 5 rutas frecuentes) ────────
     "Insurgentes Sur · Perisur":                (19.3280, -99.1700),
     "Insurgentes Norte · Indios Verdes":        (19.4960, -99.1540),
     "Viaducto · Observatorio":                  (19.4010, -99.2010),
     "Periférico Norte · Toreo":                 (19.5080, -99.2350),
     "Cuatro Caminos":                           (19.5250, -99.2100),
     "Los Reyes La Paz":                         (19.3800, -99.0400),
-    # ── Centros universitarios ────────────────────────────────────────
     "Ciudad Universitaria · UNAM":              (19.3318, -99.1873),
     "IPN · Zacatenco":                          (19.5041, -99.1331),
     "UAM Azcapotzalco":                         (19.4876, -99.1879),
     "UAM Iztapalapa":                           (19.3588, -99.0575),
-    # ── Hospitales ────────────────────────────────────────────────────
     "Hospital General de México":               (19.4112, -99.1551),
     "IMSS · CMN Siglo XXI":                     (19.3950, -99.1600),
     "Hospital ABC · Observatorio":              (19.4010, -99.2016),
     "Hospital Infantil de México":              (19.4175, -99.1538),
-    # ── Centros comerciales y hubs ────────────────────────────────────
     "Santa Fe · Centro Comercial":              (19.3620, -99.2760),
     "Polanco · Presidente Masaryk":             (19.4318, -99.1949),
     "Perisur · Centro Comercial":               (19.3039, -99.1849),
     "Antara Fashion Hall":                      (19.4820, -99.1969),
     "Parque Delta":                             (19.3940, -99.1554),
-    # ── Parques y bosques ─────────────────────────────────────────────
     "Bosque de Chapultepec · Entrada":          (19.4207, -99.1965),
     "Parque Bicentenario":                      (19.4808, -99.2091),
     "Parque España · Condesa":                  (19.4190, -99.1700),
-    # ── Colonias y alcaldías ──────────────────────────────────────────
     "Colonia Roma Norte":                       (19.4170, -99.1620),
     "Colonia Condesa":                          (19.4120, -99.1769),
     "Colonia Doctores":                         (19.4120, -99.1530),
@@ -175,7 +167,6 @@ PUNTOS_CDMX: dict[str, tuple[float, float]] = {
     "Colonia Tláhuac · Centro":                 (19.2860, -99.0070),
     "Colonia Miguel Hidalgo":                   (19.4100, -99.2000),
     "Colonia Benito Juárez":                    (19.3910, -99.1650),
-    # ── Metro (estaciones clave) ──────────────────────────────────────
     "Metro Pantitlán":                          (19.4150, -99.0726),
     "Metro Observatorio":                       (19.4003, -99.2010),
     "Metro Indios Verdes":                      (19.4963, -99.1154),
@@ -184,7 +175,6 @@ PUNTOS_CDMX: dict[str, tuple[float, float]] = {
     "Metro Cuatro Caminos":                     (19.5070, -99.2175),
     "Metro Balderas":                           (19.4295, -99.1500),
     "Metro Insurgentes":                        (19.4202, -99.1614),
-    # ── Municipios conurbados (EDOMEX) ────────────────────────────────
     "Naucalpan · Las Arboledas":                (19.5200, -99.2180),
     "Naucalpan · Centro":                       (19.4760, -99.2390),
     "Tlalnepantla · Centro":                    (19.5390, -99.1977),
@@ -197,13 +187,12 @@ PUNTOS_CDMX: dict[str, tuple[float, float]] = {
     "Tultitlán · Centro":                       (19.6462, -99.1743),
 }
 
-# Opciones para selectbox (opción mapa + lista ordenada)
 _OPCIONES_OD = [OPCION_MAPA] + sorted(PUNTOS_CDMX.keys())
 
 
-# ══════════════════════════════════════════════════════════════════════
-# CINCO CORREDORES PRINCIPALES — usados como "Rutas frecuentes"
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
+# CINCO CORREDORES PRINCIPALES
+# ════════════════════════════════════════════════════════════════════════════
 
 CORREDORES: dict[str, dict] = {
     "Insurgentes Sur · Del Valle → Indios Verdes": {
@@ -272,7 +261,7 @@ CORREDORES: dict[str, dict] = {
         ],
         "color_mapa":    "#F59E0B",
         "icono":         "🟡",
-        "descripcion":   "12.0 km · Corredor norte · Conecta Naucalpan–CDMX",
+        "descripcion":   "12.0 km · Corredor norte · Conecta Naucalpan→CDMX",
     },
     "Zaragoza · TAPO → Los Reyes": {
         "distancia_km":  16.5,
@@ -295,7 +284,6 @@ CORREDORES: dict[str, dict] = {
 DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves",
                "Viernes", "Sábado", "Domingo"]
 
-# Perfil de congestión histórico por hora (0-23)
 _PERFIL_HABIL = np.array([
     0.95, 0.97, 0.98, 0.97, 0.90, 0.75,
     0.58, 0.42, 0.38, 0.45, 0.52, 0.55,
@@ -309,12 +297,12 @@ _PERFIL_FDS = np.array([
     0.65, 0.70, 0.78, 0.85, 0.90, 0.93,
 ])
 
-CDMX_CENTRO = (19.4326, -99.1332)   # centro por defecto del mapa
+CDMX_CENTRO = (19.4326, -99.1332)
 
 
 def ratio_historico(hora: int, dia_idx: int) -> float:
     perfil = _PERFIL_FDS if dia_idx >= 5 else _PERFIL_HABIL
-    return float(perfil[hora % 24])
+    return float(perfil[int(hora) % 24])
 
 
 def ratio_a_estado(ratio: float) -> int:
@@ -325,45 +313,29 @@ def ratio_a_estado(ratio: float) -> int:
     return 2
 
 
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
 # UTILIDADES GEOGRÁFICAS
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
 
 def _reverse_geocode(lat: float, lon: float) -> str:
-    """
-    Devuelve un nombre legible para unas coordenadas.
-    1. Busca si hay un punto conocido de PUNTOS_CDMX a ≤ 300 m.
-    2. Si no, intenta Nominatim con timeout 3 s.
-    3. Si falla, devuelve "Punto ({lat:.4f}, {lon:.4f})".
-    """
-    # 1. Punto conocido cercano (sin red)
     for nombre, (plat, plon) in PUNTOS_CDMX.items():
         if calcular_distancia(lat, lon, plat, plon) <= 0.3:
             return nombre
-
-    # 2. Nominatim reverse geocoding
     try:
         from geopy.geocoders import Nominatim
         from geopy.exc import GeocoderTimedOut, GeocoderServiceError
         geolocator = Nominatim(user_agent="vialai_cdmx", timeout=3)
         location   = geolocator.reverse((lat, lon), language="es", exactly_one=True)
         if location and location.address:
-            # Usa los 2-3 primeros tokens para no saturar el título
             partes = [p.strip() for p in location.address.split(",")]
             return ", ".join(partes[:3])
     except Exception:
         pass
-
-    # 3. Fallback legible
     return f"Punto ({lat:.4f}, {lon:.4f})"
 
 
 def calcular_distancia(lat1: float, lon1: float,
                        lat2: float, lon2: float) -> float:
-    """
-    Distancia geodésica entre dos puntos en km (fórmula de Haversine).
-    Usa geopy si está disponible; si no, implementación propia.
-    """
     try:
         from geopy.distance import geodesic
         return round(geodesic((lat1, lon1), (lat2, lon2)).km, 2)
@@ -383,38 +355,17 @@ def interpolar_waypoints(
     lat2: float, lon2: float,
     n: int = 5,
 ) -> list[tuple[float, float]]:
-    """
-    Genera n puntos interpolados linealmente entre origen y destino.
-    Sirve para construir la polilínea del mapa y pasarla al pipeline.
-    """
     fracs = np.linspace(0, 1, n)
     return [(lat1 + f * (lat2 - lat1), lon1 + f * (lon2 - lon1))
             for f in fracs]
 
 
-# ──────────────────────────────────────────────────────────────────────
-# RUTA REAL POR CARRETERA (TomTom Routing API + fallback Haversine×1.4)
-# ──────────────────────────────────────────────────────────────────────
+# ════════════════════════════════════════════════════════════════════════════
+# RUTA REAL POR CARRETERA
+# ════════════════════════════════════════════════════════════════════════════
 
 @st.cache_data(show_spinner=False, ttl=3600)
-def _obtener_ruta(
-    lat1: float, lon1: float,
-    lat2: float, lon2: float,
-) -> dict:
-    """
-    Ruta real A→B.  Intenta TomTom Routing API; si falla o no hay key,
-    usa Haversine × 1.4 como estimación.
-
-    Resultado cacheado 1 hora por par de coordenadas.
-
-    Devuelve
-    --------
-    dict con claves:
-        distancia_km    – distancia real por carretera (km)
-        tiempo_base_min – tiempo sin tráfico (min)
-        waypoints       – lista de (lat, lon) para dibujar en el mapa
-        fuente          – "tomtom" | "haversine_estimada"
-    """
+def _obtener_ruta(lat1: float, lon1: float, lat2: float, lon2: float) -> dict:
     api_key = os.getenv("TOMTOM_API_KEY", "")
     if api_key and MODULOS_ROUTING_OK:
         try:
@@ -427,9 +378,7 @@ def _obtener_ruta(
                 "fuente":          ruta.fuente,
             }
         except Exception:
-            pass  # caer al fallback silenciosamente
-
-    # Fallback: Haversine × 1.4
+            pass
     dist_lineal = calcular_distancia(lat1, lon1, lat2, lon2)
     dist_km     = round(dist_lineal * 1.4, 2)
     return {
@@ -440,12 +389,11 @@ def _obtener_ruta(
     }
 
 
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
 # CADENA DE MARKOV PRECALIBRADA
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
 
 def _crear_cadena_calibrada() -> "MarkovTrafficChain | None":
-    """Cadena de Markov calibrada con datos C5 CDMX 2023 (EDA Sección 5)."""
     if not MODULOS_SIMULACION_OK:
         return None
     P = np.array([
@@ -459,13 +407,32 @@ def _crear_cadena_calibrada() -> "MarkovTrafficChain | None":
     return cadena
 
 
-# ══════════════════════════════════════════════════════════════════════
-# CSS PERSONALIZADO
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
+# CSS — RESET LIMPIO SIN CONFLICTOS
+# ════════════════════════════════════════════════════════════════════════════
+
+def _get_logo_b64() -> str | None:
+    _candidates = [
+        ROOT / "app" / "assets" / "logo_vialai.png",
+        ROOT / "Logo VialAI.png",
+    ]
+    _src = ROOT / "Logo VialAI.png"
+    _dst = ROOT / "app" / "assets" / "logo_vialai.png"
+    if _src.exists() and not _dst.exists():
+        _dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(_src, _dst)
+    for _p in _candidates:
+        if _p.exists():
+            with open(_p, "rb") as _f:
+                return "data:image/png;base64," + base64.b64encode(_f.read()).decode()
+    return None
+
+
+_LOGO_B64 = _get_logo_b64()
 
 CSS = f"""
 <style>
-/* ── Fondo general oscuro tipo Google Maps inmersivo ──────────────── */
+/* ── Fondo general ──────────────────────────────────────────────────────── */
 [data-testid="stAppViewContainer"],
 [data-testid="stMain"] {{
     background: #0D1B2A !important;
@@ -474,118 +441,168 @@ CSS = f"""
 [data-testid="stHeader"] {{
     background: #0D1B2A !important;
     border-bottom: 1px solid rgba(29,158,117,0.25);
+    height: 0px !important;
 }}
 [data-testid="stToolbar"] {{
+    visibility: hidden !important;
+}}
+#MainMenu {{
+    visibility: hidden !important;
+}}
+button[data-testid="stBaseButton-header"] {{
+    display: none !important;
+}}
+
+/* ── Texto global ───────────────────────────────────────────────────────── */
+h1, h2, h3, h4 {{ color: #F0F4F8; }}
+.stMarkdown p, .stMarkdown li {{ color: #C8D8E8; }}
+
+/* ── Sidebar: estructura y fondo ────────────────────────────────────────── */
+section[data-testid="stSidebar"] {{
     background: #0D1B2A !important;
+    border-right: 1px solid rgba(29,158,117,0.3) !important;
 }}
-/* Traducir "Rerun" → "Recargar" en la toolbar */
-[data-testid="stToolbarActions"] button[title="Rerun"] span {{
-    display: none;
+section[data-testid="stSidebar"] > div:first-child {{
+    padding-top: 1rem !important;
 }}
-[data-testid="stToolbarActions"] button[title="Rerun"]::after {{
-    content: "Recargar";
-    font-size: 0.8rem;
-    color: #8BA7BE;
+
+/* ── Sidebar: texto blanco universal ────────────────────────────────────── */
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span,
+section[data-testid="stSidebar"] label {{
+    color: #F0F4F8 !important;
 }}
-/* Texto global */
-h1, h2, h3, h4, p, span, div, label {{
-    color: #F0F4F8;
-}}
-.stMarkdown p, .stMarkdown li {{
-    color: #C8D8E8;
-}}
-/* ── Sidebar ──────────────────────────────────────────────────────── */
-[data-testid="stSidebar"] {{
-    background: linear-gradient(180deg, #0D1B2A 0%, #112233 100%) !important;
-    border-right: 1px solid rgba(29,158,117,0.30);
-}}
-[data-testid="stSidebar"] * {{
-    color: white !important;
-}}
-[data-testid="stSidebar"] .stSelectbox label,
-[data-testid="stSidebar"] .stSlider label {{
+
+/* ── Sidebar: captions / subtítulos ─────────────────────────────────────── */
+section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
+section[data-testid="stSidebar"] .stCaption {{
     color: #8BA7BE !important;
-    font-size: 0.85rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
 }}
-[data-testid="stSidebar"] .stSelectbox > div > div {{
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(29,158,117,0.40);
-    border-radius: 8px;
-    color: white !important;
+
+/* ── Sidebar: selectbox control (borde verde) ───────────────────────────── */
+section[data-testid="stSidebar"] [data-baseweb="select"] > div {{
+    background-color: rgba(255,255,255,0.06) !important;
+    border: 1px solid rgba(29,158,117,0.45) !important;
+    border-radius: 8px !important;
+    color: #F0F4F8 !important;
 }}
-/* Botones de ruta rápida en sidebar */
-[data-testid="stSidebar"] div.stButton > button {{
-    background: rgba(255,255,255,0.07);
-    color: white !important;
-    border: 1px solid rgba(29,158,117,0.35);
-    border-radius: 8px;
-    font-size: 0.8rem;
-    padding: 0.3rem 0.55rem;
-    width: 100%;
-    text-align: left;
-    transition: background 0.15s, border-color 0.15s;
+section[data-testid="stSidebar"] [data-baseweb="select"] [data-testid="stMarkdownContainer"] p {{
+    color: #F0F4F8 !important;
+    white-space: nowrap !important;
 }}
-[data-testid="stSidebar"] div.stButton > button:hover {{
-    background: rgba(29,158,117,0.18);
-    border-color: {VERDE};
+
+/* ── Sidebar: botones de ruta rápida ────────────────────────────────────── */
+section[data-testid="stSidebar"] div.stButton > button {{
+    background: rgba(255,255,255,0.06) !important;
+    color: #F0F4F8 !important;
+    border: 1px solid rgba(29,158,117,0.35) !important;
+    border-radius: 8px !important;
+    font-size: 0.8rem !important;
+    padding: 0.3rem 0.55rem !important;
+    width: 100% !important;
+    text-align: left !important;
+    transition: background 0.15s, border-color 0.15s !important;
 }}
-/* ── Botón principal Predecir ─────────────────────────────────────── */
+section[data-testid="stSidebar"] div.stButton > button:hover {{
+    background: rgba(29,158,117,0.18) !important;
+    border-color: {VERDE} !important;
+}}
+
+/* ── Botón colapsar sidebar ─────────────────────────────────────────────── */
+button[data-testid="collapsedControl"] {{
+    background: #0D1B2A !important;
+    border: 1.5px solid {VERDE} !important;
+    border-radius: 8px !important;
+    color: {VERDE} !important;
+}}
+button[data-testid="collapsedControl"] svg {{
+    fill: {VERDE} !important;
+}}
+
+/* ── Selector hora: columnas compactas ──────────────────────────────────── */
+section[data-testid="stSidebar"] [data-testid="column"] {{
+    padding: 0 2px !important;
+}}
+
+/* ── Dropdown global (BaseWeb popover) ──────────────────────────────────── */
+div[data-baseweb="popover"] {{
+    background-color: #112233 !important;
+}}
+div[data-baseweb="popover"] ul {{
+    background-color: #112233 !important;
+}}
+div[data-baseweb="popover"] li {{
+    background-color: #112233 !important;
+    color: #F0F4F8 !important;
+}}
+div[data-baseweb="popover"] li:hover {{
+    background-color: #0C447C !important;
+}}
+div[data-baseweb="popover"] li[aria-selected="true"] {{
+    background-color: {VERDE} !important;
+}}
+div[data-baseweb="popover"] * {{
+    color: #F0F4F8 !important;
+}}
+
+/* ── Selectbox área principal ───────────────────────────────────────────── */
+[data-baseweb="select"] > div {{
+    background-color: #112233 !important;
+    border-color: {VERDE} !important;
+    color: #F0F4F8 !important;
+}}
+
+/* ── Botón principal Predecir ───────────────────────────────────────────── */
 div.stButton > button[kind="primary"] {{
-    background: {VERDE};
-    color: white;
-    border: none;
-    border-radius: 10px;
-    padding: 0.65rem 1.4rem;
-    font-size: 1rem;
-    font-weight: 700;
-    width: 100%;
-    transition: background 0.2s, box-shadow 0.2s;
-    box-shadow: 0 0 18px rgba(29,158,117,0.45);
+    background: {VERDE} !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 0.65rem 1.4rem !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    width: 100% !important;
+    transition: background 0.2s, box-shadow 0.2s !important;
+    box-shadow: 0 0 18px rgba(29,158,117,0.45) !important;
 }}
 div.stButton > button[kind="primary"]:hover {{
-    background: #17866A;
-    box-shadow: 0 0 26px rgba(29,158,117,0.65);
+    background: #17866A !important;
+    box-shadow: 0 0 26px rgba(29,158,117,0.65) !important;
 }}
-/* ── Botones de modo mapa (A / B) — cuadrados con solo ícono ──────── */
-[data-testid="stHorizontalBlock"] div.stButton#btn_modo_a > button,
-[data-testid="stHorizontalBlock"] div.stButton#btn_modo_b > button {{
-    width: 56px !important;
-    height: 56px !important;
-    min-width: 56px !important;
-    padding: 0 !important;
-    font-size: 1.5rem !important;
-    border-radius: 12px !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+
+/* ── Botones secundarios ─────────────────────────────────────────────────── */
+button[data-testid="baseButton-secondary"] {{
+    color: #FFFFFF !important;
+    font-weight: 500 !important;
+    background: rgba(255,255,255,0.07) !important;
+    border: 1px solid rgba(29,158,117,0.35) !important;
 }}
-/* Modo activo glow */
-button[kind="primary"][data-testid*="modo"] {{
-    box-shadow: 0 0 14px rgba(29,158,117,0.7) !important;
+button[data-testid="baseButton-secondary"]:hover {{
+    background: rgba(29,158,117,0.18) !important;
+    border-color: {VERDE} !important;
 }}
-/* ── Cards / contenedores en área principal ───────────────────────── */
+
+/* ── Cards / métricas ───────────────────────────────────────────────────── */
 [data-testid="stMetric"] {{
     background: #112233;
     border-radius: 12px;
     padding: 1rem 1.2rem;
     border: 1px solid rgba(29,158,117,0.30);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.35);
 }}
 [data-testid="stMetricValue"] {{
     color: {VERDE} !important;
     font-size: 2rem !important;
     font-weight: 800;
 }}
-/* ── Info / alert boxes ───────────────────────────────────────────── */
+
+/* ── Info / alert boxes ─────────────────────────────────────────────────── */
 [data-testid="stInfo"] {{
     background: rgba(12,68,124,0.25);
     border-left: 4px solid {AZUL_MARINO};
     border-radius: 8px;
 }}
-/* ── Expanders ────────────────────────────────────────────────────── */
+
+/* ── Expanders ──────────────────────────────────────────────────────────── */
 [data-testid="stExpander"] {{
     background: #112233;
     border: 1px solid rgba(29,158,117,0.25);
@@ -595,20 +612,8 @@ button[kind="primary"][data-testid*="modo"] {{
     color: #8BA7BE !important;
     font-size: 0.85rem;
 }}
-/* ── Dividers ─────────────────────────────────────────────────────── */
-hr {{
-    border-color: rgba(29,158,117,0.25) !important;
-}}
-/* ── Semáforo ─────────────────────────────────────────────────────── */
-.semaforo-container {{
-    display: flex;
-    gap: 0.7rem;
-    align-items: center;
-    background: #112233;
-    border-radius: 14px;
-    padding: 1.2rem 1.4rem;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.40);
-}}
+
+/* ── Semáforo ───────────────────────────────────────────────────────────── */
 .luz {{
     width: 44px; height: 44px;
     border-radius: 50%;
@@ -619,46 +624,100 @@ hr {{
 .luz-verde    {{ background: #1D9E75; color: #1D9E75; }}
 .luz-amarilla {{ background: #F5A623; color: #F5A623; }}
 .luz-roja     {{ background: #D0021B; color: #D0021B; }}
-/* ── Slider + selectbox en área principal ─────────────────────────── */
-[data-testid="stSlider"] {{
-    color: {VERDE};
-}}
-[data-testid="stSelectbox"] > div > div {{
-    background: #112233;
-    border: 1px solid rgba(29,158,117,0.35);
-    color: #F0F4F8;
-}}
-/* ── Caption / small text ─────────────────────────────────────────── */
+
+/* ── Caption / small text ───────────────────────────────────────────────── */
 .stCaption, [data-testid="stCaptionContainer"] p {{
     color: #8BA7BE !important;
 }}
+
+/* ── hr ─────────────────────────────────────────────────────────────────── */
+hr {{ border-color: rgba(29,158,117,0.25) !important; }}
+
+/* ── VialAI header fijo ─────────────────────────────────────────────────── */
+.vialai-header {{
+    position: fixed !important;
+    top: 0 !important; left: 0 !important; right: 0 !important;
+    height: 56px !important;
+    background: #0D1B2A !important;
+    border-bottom: 2px solid {VERDE} !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 0 2rem !important;
+    gap: 1.2rem !important;
+    z-index: 999999 !important;
+}}
+.vh-logo {{ font-size: 1.4rem; font-weight: 800; letter-spacing: -0.03em; }}
+.vh-logo .v  {{ color: #FFFFFF; }}
+.vh-logo .ai {{ color: {VERDE}; }}
+.vh-sep {{ width: 1px; height: 24px; background: rgba(255,255,255,0.15); }}
+.vh-tag {{ font-size: 0.78rem; color: #8BA7BE; }}
+.vh-right {{
+    margin-left: auto;
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.75rem;
+    color: #8BA7BE;
+}}
+.vh-right span:hover {{ color: {VERDE}; cursor: pointer; }}
+
+/* ── Empujar contenido debajo del header ────────────────────────────────── */
+.main .block-container {{
+    padding-top: 72px !important;
+}}
+
+/* ── Hora de salida: pill de confirmación ───────────────────────────────── */
+.hora-pill {{
+    text-align: center;
+    margin-top: 6px;
+    padding: 5px 0;
+    background: rgba(29,158,117,0.12);
+    border: 1px solid rgba(29,158,117,0.28);
+    border-radius: 6px;
+    font-size: 0.82rem;
+    color: #8BA7BE;
+}}
+.hora-pill b {{
+    color: {VERDE};
+    font-size: 0.95rem;
+}}
 </style>
 """
+
 st.markdown(CSS, unsafe_allow_html=True)
 
+_logo_html = (
+    f'<img src="{_LOGO_B64}" style="height:44px;width:auto;object-fit:contain;">'
+    if _LOGO_B64
+    else '<div class="vh-logo"><span class="v">Vial</span><span class="ai">AI</span></div>'
+)
+st.markdown(
+    f"<div class='vialai-header'>"
+    f"{_logo_html}"
+    f"<div class='vh-sep'></div>"
+    f"<div class='vh-tag'>Predicción estocástica · ZMVM</div>"
+    f"<div class='vh-right'>"
+    f"<span>Monte Carlo + Markov</span>"
+    f"<span>·</span>"
+    f"<span>Diplomado Ciencia de Datos 2026</span>"
+    f"</div>"
+    f"</div>",
+    unsafe_allow_html=True,
+)
 
-# ══════════════════════════════════════════════════════════════════════
-# INICIALIZACIÓN DEL SESSION STATE
-# — Debe ejecutarse antes de cualquier widget ─
-# ══════════════════════════════════════════════════════════════════════
+
+# ════════════════════════════════════════════════════════════════════════════
+# SESSION STATE
+# ════════════════════════════════════════════════════════════════════════════
 
 _DEFAULTS: dict = {
-    # Punto de origen: {"lat", "lon", "nombre"} | None
     "origen":  None,
-    # Punto de destino: {"lat", "lon", "nombre"} | None
     "destino": None,
-    # Modo de colocación del próximo clic en el mapa: "A" o "B"
     "modo_click": "A",
-    # Último clic procesado (evita re-procesar el mismo clic en reruns)
     "ultimo_click": None,
-    # Waypoints activos (de ruta rápida) | None → se interpolan
     "waypoints_activos": None,
-    # Color de ruta activa
     "color_ruta": AZUL_MARINO,
-    # Selectbox origen y destino (controlados programáticamente)
-    "sel_origen":  OPCION_MAPA,
-    "sel_destino": OPCION_MAPA,
-    # Capa de mapa activa: "estandar" | "oscuro" | "trafico"
+    "ruta_rapida_origen":  None,
+    "ruta_rapida_destino": None,
     "capa_mapa": "estandar",
 }
 for _k, _v in _DEFAULTS.items():
@@ -666,105 +725,92 @@ for _k, _v in _DEFAULTS.items():
         st.session_state[_k] = _v
 
 
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
 # SIDEBAR
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
 
 with st.sidebar:
 
-    # ── Logo y tagline ────────────────────────────────────────────────
-    _logo_path = ROOT / "app" / "assets" / "logo_vialai.png"
-    if _logo_path.exists():
-        st.image(str(_logo_path), use_container_width=True)
-    else:
-        st.markdown(
-            """
-            <div style="text-align:center;padding:1.2rem 0 0.3rem;">
-                <div style="font-size:2rem;font-weight:800;
-                            letter-spacing:-0.02em;line-height:1.1;">
-                    <span style="color:#0C447C;">Vial</span><span
-                          style="color:#1D9E75;">AI</span>
-                </div>
-                <div style="font-size:0.72rem;color:#8BA7BE;
-                            margin-top:0.25rem;letter-spacing:.04em;">
-                    Predicción inteligente de tráfico · ZMVM
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
     st.markdown(
-        "<hr style='border-color:rgba(29,158,117,0.30);margin:0.6rem 0 0.4rem;'>",
+        "<hr style='border-color:rgba(29,158,117,0.30);margin:0.4rem 0 0.4rem;'>",
         unsafe_allow_html=True,
     )
 
-    # ── 📍 Origen ─────────────────────────────────────────────────────
+    # ── Origen ──────────────────────────────────────────────────────────────
     st.markdown(
         "<div style='font-size:0.78rem;color:#A8C4D8;text-transform:uppercase;"
         "letter-spacing:.06em;font-weight:600;margin-bottom:4px;'>"
         "📍 Origen</div>",
         unsafe_allow_html=True,
     )
+    _idx_origen = (
+        _OPCIONES_OD.index(st.session_state.ruta_rapida_origen)
+        if st.session_state.ruta_rapida_origen in _OPCIONES_OD
+        else 0
+    )
     sel_origen = st.selectbox(
         label="Origen",
         options=_OPCIONES_OD,
-        key="sel_origen",
+        index=_idx_origen,
         label_visibility="collapsed",
     )
-    # Sincronizar selectbox → session state (si el usuario elige un punto)
     if sel_origen != OPCION_MAPA:
+        st.session_state.ruta_rapida_origen = sel_origen
         lat_o, lon_o = PUNTOS_CDMX[sel_origen]
-        st.session_state.origen = {"lat": lat_o, "lon": lon_o,
-                                    "nombre": sel_origen}
-        st.session_state.waypoints_activos = None  # invalidar waypoints fijos
+        st.session_state.origen = {"lat": lat_o, "lon": lon_o, "nombre": sel_origen}
+        st.session_state.waypoints_activos = None
 
-    # Mostrar coordenadas activas
     if st.session_state.origen:
         o = st.session_state.origen
         st.markdown(
             f"<div style='font-size:0.75rem;color:#7EC8A4;margin-top:2px;'>"
-            f"✅ {o['nombre']}<br>"
+            f"✔ {o['nombre']}<br>"
             f"<span style='color:#8AADCA;'>{o['lat']:.4f}, {o['lon']:.4f}</span></div>",
             unsafe_allow_html=True,
         )
     else:
         st.caption("Selecciona en el mapa o lista")
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # ── 🏁 Destino ────────────────────────────────────────────────────
+    # ── Destino ──────────────────────────────────────────────────────────────
     st.markdown(
         "<div style='font-size:0.78rem;color:#A8C4D8;text-transform:uppercase;"
-        "letter-spacing:.06em;font-weight:600;margin-bottom:4px;'>"
+        "letter-spacing:.06em;font-weight:600;margin-bottom:4px;margin-top:8px;'>"
         "🏁 Destino</div>",
         unsafe_allow_html=True,
+    )
+    _idx_destino = (
+        _OPCIONES_OD.index(st.session_state.ruta_rapida_destino)
+        if st.session_state.ruta_rapida_destino in _OPCIONES_OD
+        else 0
     )
     sel_destino = st.selectbox(
         label="Destino",
         options=_OPCIONES_OD,
-        key="sel_destino",
+        index=_idx_destino,
         label_visibility="collapsed",
     )
     if sel_destino != OPCION_MAPA:
+        st.session_state.ruta_rapida_destino = sel_destino
         lat_d, lon_d = PUNTOS_CDMX[sel_destino]
-        st.session_state.destino = {"lat": lat_d, "lon": lon_d,
-                                     "nombre": sel_destino}
+        st.session_state.destino = {"lat": lat_d, "lon": lon_d, "nombre": sel_destino}
         st.session_state.waypoints_activos = None
 
     if st.session_state.destino:
         d = st.session_state.destino
         st.markdown(
             f"<div style='font-size:0.75rem;color:#E88;margin-top:2px;'>"
-            f"✅ {d['nombre']}<br>"
+            f"✔ {d['nombre']}<br>"
             f"<span style='color:#8AADCA;'>{d['lat']:.4f}, {d['lon']:.4f}</span></div>",
             unsafe_allow_html=True,
         )
     else:
         st.caption("Selecciona en el mapa o lista")
 
-    # ── Distancia calculada ───────────────────────────────────────────
-    st.markdown("<hr style='border-color:rgba(255,255,255,0.15);'>",
-                unsafe_allow_html=True)
+    # ── Distancia ────────────────────────────────────────────────────────────
+    st.markdown(
+        "<hr style='border-color:rgba(255,255,255,0.15);margin:0.6rem 0;'>",
+        unsafe_allow_html=True,
+    )
 
     origen_activo  = st.session_state.origen
     destino_activo = st.session_state.destino
@@ -788,61 +834,81 @@ with st.sidebar:
         )
     else:
         dist_km = None
-        st.markdown(
-            "<div style='text-align:center;padding:0.4rem;background:rgba(255,255,255,0.07);"
-            "border-radius:8px;font-size:0.8rem;color:#8AADCA;'>"
-            "🛣️ Define origen y destino para calcular la distancia</div>",
-            unsafe_allow_html=True,
-        )
 
-    # ── Rutas frecuentes ──────────────────────────────────────────────
-    st.markdown("<hr style='border-color:rgba(255,255,255,0.15);'>",
-                unsafe_allow_html=True)
+    # ── Rutas frecuentes ─────────────────────────────────────────────────────
     st.markdown(
         "<div style='font-size:0.72rem;color:#7B9DB8;text-transform:uppercase;"
-        "letter-spacing:.06em;font-weight:600;margin-bottom:6px;'>"
+        "letter-spacing:.06em;font-weight:600;margin:8px 0 6px;'>"
         "⚡ Rutas frecuentes</div>",
         unsafe_allow_html=True,
     )
     for nombre_ruta, datos_ruta in CORREDORES.items():
         etiqueta = f"{datos_ruta['icono']} {nombre_ruta.split('·')[0].strip()}"
-        if st.button(
-            etiqueta,
-            key=f"btn_{nombre_ruta[:20]}",
-            use_container_width=True,
-        ):
-            st.session_state.sel_origen  = datos_ruta["origen_key"]
-            st.session_state.sel_destino = datos_ruta["destino_key"]
+        if st.button(etiqueta, key=f"btn_{nombre_ruta[:20]}", use_container_width=True):
+            st.session_state.ruta_rapida_origen  = datos_ruta["origen_key"]
+            st.session_state.ruta_rapida_destino = datos_ruta["destino_key"]
             lat_o, lon_o = PUNTOS_CDMX[datos_ruta["origen_key"]]
             lat_d, lon_d = PUNTOS_CDMX[datos_ruta["destino_key"]]
-            st.session_state.origen  = {"lat": lat_o, "lon": lon_o,
-                                         "nombre": datos_ruta["origen_key"]}
-            st.session_state.destino = {"lat": lat_d, "lon": lon_d,
-                                         "nombre": datos_ruta["destino_key"]}
+            st.session_state.origen  = {"lat": lat_o, "lon": lon_o, "nombre": datos_ruta["origen_key"]}
+            st.session_state.destino = {"lat": lat_d, "lon": lon_d, "nombre": datos_ruta["destino_key"]}
             st.session_state.waypoints_activos = datos_ruta["waypoints"]
             st.session_state.color_ruta        = datos_ruta["color_mapa"]
             st.session_state.modo_click        = "A"
 
-    st.markdown("<hr style='border-color:rgba(255,255,255,0.15);'>",
-                unsafe_allow_html=True)
+    st.markdown(
+        "<hr style='border-color:rgba(255,255,255,0.15);margin:0.6rem 0;'>",
+        unsafe_allow_html=True,
+    )
 
-    # ── Hora de salida ────────────────────────────────────────────────
+    # ── Hora de salida ───────────────────────────────────────────────────────
     st.markdown(
         "<div style='font-size:0.78rem;color:#A8C4D8;text-transform:uppercase;"
-        "letter-spacing:.06em;font-weight:600;margin-bottom:4px;'>"
+        "letter-spacing:.06em;font-weight:600;margin-bottom:6px;'>"
         "🕐 Hora de salida</div>",
         unsafe_allow_html=True,
     )
-    hora_salida = st.slider(
-        label="Hora", min_value=0, max_value=23, value=8,
-        format="%02d:00 h", label_visibility="collapsed",
-    )
-    st.caption(f"Salida a las **{hora_salida:02d}:00 h**")
 
-    # ── Día de la semana ──────────────────────────────────────────────
+    # Opciones cortas para que no se trunquen en columnas angostas
+    _horas_opciones   = [f"{h:02d}:00" for h in range(24)]
+    _minutos_opciones = [f":{m:02d}" for m in range(0, 60, 5)]
+
+    _col_h, _col_m = st.columns([3, 2])
+    with _col_h:
+        st.markdown(
+            "<div style='font-size:0.72rem;color:#8BA7BE;margin-bottom:2px;'>HORA</div>",
+            unsafe_allow_html=True,
+        )
+        _hora_sel = st.selectbox(
+            "Hora", _horas_opciones,
+            index=8,
+            label_visibility="collapsed",
+            key="sel_hora",
+        )
+    with _col_m:
+        st.markdown(
+            "<div style='font-size:0.72rem;color:#8BA7BE;margin-bottom:2px;'>MIN</div>",
+            unsafe_allow_html=True,
+        )
+        _min_sel = st.selectbox(
+            "Min", _minutos_opciones,
+            index=0,
+            label_visibility="collapsed",
+            key="sel_min",
+        )
+
+    _hora    = int(_hora_sel.split(":")[0])
+    _minutos = int(_min_sel.replace(":", ""))
+    hora_salida = _hora + _minutos / 60
+
+    st.markdown(
+        f"<div class='hora-pill'>Salida a las <b>{_hora:02d}:{_minutos:02d} h</b></div>",
+        unsafe_allow_html=True,
+    )
+
+    # ── Día de la semana ─────────────────────────────────────────────────────
     st.markdown(
         "<div style='font-size:0.78rem;color:#A8C4D8;text-transform:uppercase;"
-        "letter-spacing:.06em;font-weight:600;margin-top:0.5rem;margin-bottom:4px;'>"
+        "letter-spacing:.06em;font-weight:600;margin-top:10px;margin-bottom:4px;'>"
         "📅 Día de la semana</div>",
         unsafe_allow_html=True,
     )
@@ -852,10 +918,12 @@ with st.sidebar:
     )
     dia_idx = DIAS_SEMANA.index(dia_nombre)
 
-    st.markdown("<hr style='border-color:rgba(255,255,255,0.15);'>",
-                unsafe_allow_html=True)
+    st.markdown(
+        "<hr style='border-color:rgba(255,255,255,0.15);margin:0.6rem 0;'>",
+        unsafe_allow_html=True,
+    )
 
-    # ── Configuración avanzada ────────────────────────────────────────
+    # ── Configuración avanzada ───────────────────────────────────────────────
     with st.expander("⚙️ Configuración avanzada"):
         n_sims = st.select_slider(
             "Simulaciones Monte Carlo",
@@ -868,8 +936,7 @@ with st.sidebar:
             help="Requiere TOMTOM_API_KEY y OPENWEATHERMAP_API_KEY en .env",
         )
 
-    # ── Botón principal ───────────────────────────────────────────────
-    st.markdown("<br>", unsafe_allow_html=True)
+    # ── Botón principal ──────────────────────────────────────────────────────
     boton_deshabilitado = not (origen_activo and destino_activo)
     predecir = st.button(
         "🚀 Predecir trayecto",
@@ -878,35 +945,20 @@ with st.sidebar:
         disabled=boton_deshabilitado,
     )
     if boton_deshabilitado:
-        st.caption("↑ Define origen y destino para habilitar")
-
-    # ── Footer ────────────────────────────────────────────────────────
-    st.markdown(
-        """
-        <div style="position:fixed;bottom:1.2rem;left:0;width:17rem;
-                    text-align:center;font-size:0.7rem;color:#6B9EC0;">
-            UrbanFlow CDMX · Diplomado Ciencia de Datos<br>
-            Motor: Monte Carlo + Cadenas de Markov
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        st.caption("⚠ Define origen y destino para habilitar")
 
 
-# ══════════════════════════════════════════════════════════════════════
-# CONSTRUCCIÓN DE corredor_activo (fuente de verdad para la simulación)
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
+# CORREDOR ACTIVO
+# ════════════════════════════════════════════════════════════════════════════
 
 if origen_activo and destino_activo:
-    # Ruta real por carretera (TomTom Routing API o fallback Haversine×1.4)
-    # El resultado está cacheado 1 h, así que los rerenders son instantáneos.
     _ruta = _obtener_ruta(
         origen_activo["lat"],  origen_activo["lon"],
         destino_activo["lat"], destino_activo["lon"],
     )
     dist_km_activo    = _ruta["distancia_km"]
-    waypoints_activos = _ruta["waypoints"]   # geometría real o interpolada
-
+    waypoints_activos = _ruta["waypoints"]
     corredor_activo: dict | None = {
         "distancia_km":    dist_km_activo,
         "tiempo_base_min": _ruta["tiempo_base_min"],
@@ -924,30 +976,22 @@ else:
     waypoints_activos = []
 
 
-# ══════════════════════════════════════════════════════════════════════
-# FUNCIONES DE SIMULACIÓN (sin cambios respecto a la versión anterior)
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
+# SIMULACIÓN
+# ════════════════════════════════════════════════════════════════════════════
 
 @st.cache_resource(show_spinner=False)
 def obtener_cadena() -> "MarkovTrafficChain | None":
-    """Carga y cachea la cadena de Markov calibrada."""
     return _crear_cadena_calibrada()
 
 
-def simular_modo_demo(corredor: dict, hora: int, dia_idx: int,
-                      n_simulaciones: int) -> dict:
-    """
-    Simulación con cadena de Markov calibrada y perfiles históricos de
-    congestión (sin llamadas a APIs externas).
-    """
+def simular_modo_demo(corredor: dict, hora: int, dia_idx: int, n_simulaciones: int) -> dict:
     cadena = obtener_cadena()
     if cadena is None or not MODULOS_SIMULACION_OK:
         return _resultado_fallback(corredor, hora, dia_idx)
-
     ratio          = ratio_historico(hora, dia_idx)
     estado_inicial = ratio_a_estado(ratio)
     factor_cong    = 1.0 + max(0, (0.6 - ratio)) * 0.8
-
     params_ajust = {
         k: {
             "media": max(round(v["media"] / factor_cong, 2), 1.0),
@@ -977,7 +1021,6 @@ def simular_modo_demo(corredor: dict, hora: int, dia_idx: int,
 
 
 def _resultado_fallback(corredor: dict, hora: int, dia_idx: int) -> dict:
-    """Estimación determinista de respaldo."""
     ratio  = ratio_historico(hora, dia_idx)
     vel    = 40 * ratio + 7 * (1 - ratio)
     p50    = round(corredor["distancia_km"] / vel * 60, 1)
@@ -992,16 +1035,13 @@ def _resultado_fallback(corredor: dict, hora: int, dia_idx: int) -> dict:
     }
 
 
-def simular_modo_api(corredor: dict, hora: int, dia_idx: int,
-                     n_simulaciones: int) -> dict:
-    """Predicción con APIs TomTom + OWM en tiempo real."""
+def simular_modo_api(corredor: dict, hora: int, dia_idx: int, n_simulaciones: int) -> dict:
     from dotenv import load_dotenv
     load_dotenv()
     tomtom_key = os.getenv("TOMTOM_API_KEY", "")
     owm_key    = os.getenv("OPENWEATHERMAP_API_KEY", "")
-
     if not tomtom_key or not owm_key:
-        st.warning("Faltan API keys — usando modo DEMO.")
+        st.warning("Faltan API keys → usando modo DEMO.")
         return simular_modo_demo(corredor, hora, dia_idx, n_simulaciones)
     try:
         pipeline = PipelineIntegrador(
@@ -1027,13 +1067,13 @@ def simular_modo_api(corredor: dict, hora: int, dia_idx: int,
             "clima": ctx.clima, "factor_clima": ctx.factor_climatico,
         }
     except Exception as e:
-        st.warning(f"Error API: {e} — usando modo DEMO.")
+        st.warning(f"Error API: {e} → usando modo DEMO.")
         return simular_modo_demo(corredor, hora, dia_idx, n_simulaciones)
 
 
-# ══════════════════════════════════════════════════════════════════════
-# FUNCIONES DE VISUALIZACIÓN
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
+# VISUALIZACIÓN
+# ════════════════════════════════════════════════════════════════════════════
 
 def _nivel_riesgo(estado: int, p90: float, p50: float) -> tuple[str, str, str]:
     banda = p90 - p50
@@ -1044,8 +1084,7 @@ def _nivel_riesgo(estado: int, p90: float, p50: float) -> tuple[str, str, str]:
     return "amarillo", AMARILLO, "Tráfico moderado"
 
 
-def render_gauge(p50: float, p10: float, p90: float,
-                 distancia_km: float) -> go.Figure:
+def render_gauge(p50: float, p10: float, p90: float, distancia_km: float) -> go.Figure:
     max_val = max(p90 * 1.3, 90)
     fig = go.Figure(go.Indicator(
         mode   = "gauge+number+delta",
@@ -1078,8 +1117,8 @@ def render_gauge(p50: float, p10: float, p90: float,
                 "tickcolor": "#CCC",
                 "tickfont":  {"size": 11},
             },
-            "bar":       {"color": AZUL_MARINO, "thickness": 0.30},
-            "bgcolor":   "white",
+            "bar":         {"color": AZUL_MARINO, "thickness": 0.30},
+            "bgcolor":     "white",
             "borderwidth": 0,
             "steps": [
                 {"range": [0,              max_val * 0.40], "color": "#D4EFE4"},
@@ -1103,8 +1142,7 @@ def render_gauge(p50: float, p10: float, p90: float,
     return fig
 
 
-def render_banda_incertidumbre(p10: float, p50: float,
-                                p90: float) -> go.Figure:
+def render_banda_incertidumbre(p10: float, p50: float, p90: float) -> go.Figure:
     fig = go.Figure()
     fig.add_shape(type="rect", x0=p10, x1=p90, y0=0.2, y1=0.8,
                   fillcolor="rgba(12,68,124,0.15)",
@@ -1113,8 +1151,7 @@ def render_banda_incertidumbre(p10: float, p50: float,
                   fillcolor="rgba(29,158,117,0.25)", line=dict(width=0))
     fig.add_shape(type="line", x0=p50, x1=p50, y0=0.05, y1=0.95,
                   line=dict(color=AZUL_MARINO, width=3))
-    for val, etiq, col in [(p10, "P10", VERDE), (p50, "P50", AZUL_MARINO),
-                            (p90, "P90", ROJO)]:
+    for val, etiq, col in [(p10, "P10", VERDE), (p50, "P50", AZUL_MARINO), (p90, "P90", ROJO)]:
         fig.add_trace(go.Scatter(
             x=[val], y=[0.5], mode="markers+text",
             marker=dict(size=14, color=col, symbol="diamond"),
@@ -1132,14 +1169,13 @@ def render_banda_incertidumbre(p10: float, p50: float,
                    titlefont=dict(color="#8BA7BE")),
         yaxis=dict(visible=False, range=[0, 1]),
         paper_bgcolor="#0D1B2A", plot_bgcolor="#0D1B2A",
-        title=dict(text="Banda de incertidumbre P10 – P50 – P90",
+        title=dict(text="Banda de incertidumbre P10 — P50 — P90",
                    font=dict(size=13, color="#C8D8E8"), x=0.5),
     )
     return fig
 
 
-def render_histograma(tiempos: np.ndarray, p10: float,
-                      p50: float, p90: float) -> go.Figure:
+def render_histograma(tiempos: np.ndarray, p10: float, p50: float, p90: float) -> go.Figure:
     fig = go.Figure()
     fig.add_trace(go.Histogram(
         x=tiempos, nbinsx=60,
@@ -1159,10 +1195,8 @@ def render_histograma(tiempos: np.ndarray, p10: float,
                    font=dict(size=13, color="#C8D8E8"), x=0.5),
         xaxis_title="Tiempo de viaje (minutos)",
         yaxis_title="Frecuencia",
-        xaxis=dict(title_font=dict(color="#8BA7BE"),
-                   tickfont=dict(color="#8BA7BE")),
-        yaxis=dict(title_font=dict(color="#8BA7BE"),
-                   tickfont=dict(color="#8BA7BE")),
+        xaxis=dict(title_font=dict(color="#8BA7BE"), tickfont=dict(color="#8BA7BE")),
+        yaxis=dict(title_font=dict(color="#8BA7BE"), tickfont=dict(color="#8BA7BE")),
         paper_bgcolor="#0D1B2A", plot_bgcolor="#0D1B2A",
         height=280, margin=dict(t=40, b=40, l=40, r=20),
         bargap=0.05, showlegend=False,
@@ -1187,25 +1221,19 @@ def render_semaforo(nivel: str, etiqueta: str, ratio: float,
                     align-items:center;
                     gap:1.5rem;
                     box-shadow:0 2px 18px rgba(0,0,0,0.40);">
-            <!-- columna izquierda: semáforo centrado -->
-            <div style="display:flex;flex-direction:column;
-                        align-items:center;gap:7px;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:7px;">
                 <div class="luz luz-roja {ar}"></div>
                 <div class="luz luz-amarilla {aa}"></div>
                 <div class="luz luz-verde {av}"></div>
             </div>
-            <!-- columna derecha: jerarquía de texto -->
             <div>
-                <div style="font-size:1.45rem;font-weight:800;
-                            color:{color_nivel};line-height:1.2;">
+                <div style="font-size:1.45rem;font-weight:800;color:{color_nivel};line-height:1.2;">
                     {etiqueta}
                 </div>
-                <div style="font-size:0.9rem;color:#555;
-                            margin-top:0.35rem;">
+                <div style="font-size:0.9rem;color:#555;margin-top:0.35rem;">
                     Estado Markov: <b>{estado_nombre}</b>
                 </div>
-                <div style="font-size:0.78rem;color:#999;
-                            margin-top:0.2rem;">
+                <div style="font-size:0.78rem;color:#999;margin-top:0.2rem;">
                     Ratio de congestión: {ratio:.2f}
                 </div>
             </div>
@@ -1215,29 +1243,21 @@ def render_semaforo(nivel: str, etiqueta: str, ratio: float,
     )
 
 
-# ══════════════════════════════════════════════════════════════════════
-# MAPA INTERACTIVO (origen-destino con clic)
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
+# MAPA INTERACTIVO
+# ════════════════════════════════════════════════════════════════════════════
 
 def render_mapa_od(
-    origen:     dict | None,
-    destino:    dict | None,
-    waypoints:  list[tuple[float, float]],
-    color:      str = AZUL_MARINO,
-    height:     int = 400,
-    capa_mapa:  str = "estandar",
+    origen: dict | None,
+    destino: dict | None,
+    waypoints: list[tuple[float, float]],
+    color: str = AZUL_MARINO,
+    height: int = 400,
+    capa_mapa: str = "estandar",
 ) -> dict | None:
-    """
-    Mapa Folium interactivo con soporte de clic para fijar origen (A)
-    y destino (B).
-
-    Devuelve el dict de salida de st_folium (contiene `last_clicked`).
-    """
     if not FOLIUM_OK:
         st.info("Instala `folium` y `streamlit-folium` para ver el mapa.")
         return None
-
-    # Calcular centro y zoom
     if origen and destino:
         centro = ((origen["lat"] + destino["lat"]) / 2,
                   (origen["lon"] + destino["lon"]) / 2)
@@ -1249,52 +1269,17 @@ def render_mapa_od(
     else:
         centro = CDMX_CENTRO; zoom = 11
 
-    # ── Selección de capa base ────────────────────────────────────────
-    _TILES_BASE = {
-        "estandar": ("CartoDB positron",    "Estándar"),
-        "oscuro":   ("CartoDB dark_matter", "Oscuro"),
-        "trafico":  ("CartoDB positron",    "Tráfico"),
-    }
-    _base_tile, _ = _TILES_BASE.get(capa_mapa, _TILES_BASE["estandar"])
+    _tile = "CartoDB dark_matter" if capa_mapa == "oscuro" else "OpenStreetMap"
+    m = folium.Map(location=centro, zoom_start=zoom, tiles=_tile, prefer_canvas=True)
 
-    m = folium.Map(location=centro, zoom_start=zoom,
-                   tiles=_base_tile,
-                   prefer_canvas=True)
-
-    # ── Capa de tráfico TomTom (overlay) ─────────────────────────────
-    if capa_mapa == "trafico":
-        _tt_key = os.getenv("TOMTOM_API_KEY", "")
-        if _tt_key:
-            folium.TileLayer(
-                tiles=(
-                    f"https://api.tomtom.com/traffic/map/4/tile/"
-                    f"relative-delay/{{z}}/{{x}}/{{y}}.png?key={_tt_key}"
-                ),
-                name="Tráfico TomTom",
-                attr="© TomTom",
-                overlay=True,
-                control=True,
-                opacity=0.75,
-            ).add_to(m)
-            folium.LayerControl(collapsed=False).add_to(m)
-
-    # Polilínea del trayecto (sólo si hay al menos 2 puntos)
     if len(waypoints) >= 2:
-        folium.PolyLine(
-            locations=waypoints, color=color,
-            weight=6, opacity=0.85,
-            tooltip="Trayecto activo",
-        ).add_to(m)
-
-        # Puntos intermedios (si la ruta es de un corredor predefinido)
+        folium.PolyLine(locations=waypoints, color=color, weight=6, opacity=0.85,
+                        tooltip="Trayecto activo").add_to(m)
         for i, wp in enumerate(waypoints[1:-1], 1):
-            folium.CircleMarker(
-                location=wp, radius=5, color=color,
-                fill=True, fill_color="white", fill_opacity=0.9,
-                weight=2.5, tooltip=f"Punto {i}",
-            ).add_to(m)
+            folium.CircleMarker(location=wp, radius=5, color=color,
+                                fill=True, fill_color="white", fill_opacity=0.9,
+                                weight=2.5, tooltip=f"Punto {i}").add_to(m)
 
-    # Marcador de origen (A) — verde
     if origen:
         folium.Marker(
             location=[origen["lat"], origen["lon"]],
@@ -1308,7 +1293,6 @@ def render_mapa_od(
             tooltip=f"Origen: {origen['nombre']}",
         ).add_to(m)
 
-    # Marcador de destino (B) — rojo
     if destino:
         folium.Marker(
             location=[destino["lat"], destino["lon"]],
@@ -1322,8 +1306,7 @@ def render_mapa_od(
             tooltip=f"Destino: {destino['nombre']}",
         ).add_to(m)
 
-    # Instrucción flotante dentro del mapa
-    modo = st.session_state.modo_click
+    modo        = st.session_state.modo_click
     color_modo  = VERDE if modo == "A" else ROJO
     letra_modo  = "A (Origen)" if modo == "A" else "B (Destino)"
     instruccion = folium.Element(
@@ -1339,45 +1322,19 @@ def render_mapa_od(
     )
     m.get_root().html.add_child(instruccion)
 
-    return st_folium(
-        m,
-        key="mapa_od",
-        width="100%",
-        height=height,
-        returned_objects=["last_clicked"],
-    )
+    return st_folium(m, key="mapa_od", width="100%", height=height,
+                     returned_objects=["last_clicked"])
 
 
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
 # ÁREA PRINCIPAL
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
 
-# ── Encabezado ────────────────────────────────────────────────────────
-st.markdown(
-    f"""
-    <h1 style="color:{AZUL_MARINO};font-size:1.9rem;
-               font-weight:900;margin-bottom:0.2rem;">
-        🚦 VialAI
-        <span style="font-size:1rem;font-weight:400;color:#666;margin-left:0.5rem;">
-            Predicción de tiempos de viaje · ZMVM
-        </span>
-    </h1>
-    <p style="color:#888;font-size:0.9rem;margin-top:0;">
-        Motor estocástico: <b>Monte Carlo + Cadenas de Markov</b> ·
-        {n_sims:,} simulaciones por consulta · Bandas P10/P50/P90
-    </p>
-    <hr style="border-color:#E0E0E0;margin:0.5rem 0 1rem;">
-    """,
-    unsafe_allow_html=True,
-)
-
-# ── Layout: panel de info (izq) + mapa (der) ──────────────────────────
 col_info, col_mapa = st.columns([1, 2], gap="large")
 
 with col_info:
     st.markdown("#### Trayecto seleccionado")
 
-    # Origen
     if origen_activo:
         st.markdown(
             f"<div style='padding:0.6rem 0.9rem;background:#E8F5F0;"
@@ -1397,7 +1354,6 @@ with col_info:
             unsafe_allow_html=True,
         )
 
-    # Destino
     if destino_activo:
         st.markdown(
             f"<div style='padding:0.6rem 0.9rem;background:#FEF0F0;"
@@ -1417,7 +1373,6 @@ with col_info:
             unsafe_allow_html=True,
         )
 
-    # Distancia + hora/día + estado previsto
     if corredor_activo:
         ratio_prev  = ratio_historico(hora_salida, dia_idx)
         estado_prev = ratio_a_estado(ratio_prev)
@@ -1427,7 +1382,7 @@ with col_info:
             | Campo | Valor |
             |---|---|
             | Distancia | **{dist_km_activo} km** |
-            | Hora de salida | **{hora_salida:02d}:00 h** |
+            | Hora de salida | **{_hora:02d}:{_minutos:02d} h** |
             | Día | **{dia_nombre}** |
             | Modo | **{"API en tiempo real" if usar_api else "DEMO histórico"}** |
             """
@@ -1437,134 +1392,110 @@ with col_info:
             f"border-radius:8px;padding:0.7rem 1rem;margin-top:0.3rem;'>"
             f"<b style='color:{color_prev};'>{etiq_prev}</b><br>"
             f"<span style='font-size:0.8rem;color:#555;'>"
-            f"Ratio histórico {hora_salida:02d}h {dia_nombre}: "
+            f"Ratio histórico {_hora:02d}:{_minutos:02d}h {dia_nombre}: "
             f"<b>{ratio_prev:.2f}</b></span></div>",
             unsafe_allow_html=True,
         )
     else:
         st.info("Define origen y destino para ver la información del trayecto.")
 
-    # ── Botones de modo clic — íconos cuadrados 56×56 px ─────────────
     st.markdown(
         "<div style='font-size:0.72rem;color:#8BA7BE;text-transform:uppercase;"
         "letter-spacing:.05em;font-weight:600;margin-bottom:6px;'>"
         "Clic en mapa</div>",
         unsafe_allow_html=True,
     )
-    # CSS específico para estos dos botones cuadrados
     st.markdown(
         """
         <style>
-        div[data-testid="column"]:has(> div > div > button[kind="primary"]) button,
-        button[data-testid="baseButton-secondary"][aria-label="📍"],
-        button[data-testid="baseButton-primary"][aria-label="📍"],
-        button[data-testid="baseButton-secondary"][aria-label="🏁"],
-        button[data-testid="baseButton-primary"][aria-label="🏁"] {
-            width: 56px !important; height: 56px !important;
-            min-width: 56px !important; max-width: 56px !important;
-            padding: 0 !important; font-size: 1.6rem !important;
+        button[aria-label="🟢"],
+        button[aria-label="🔴"] {
+            width: 52px !important; height: 52px !important;
+            min-width: 52px !important; max-width: 52px !important;
+            padding: 0 !important; font-size: 1.5rem !important;
             border-radius: 12px !important;
-            display: flex; align-items: center; justify-content: center;
+            display: flex !important; align-items: center !important;
+            justify-content: center !important;
+            color: #FFFFFF !important;
         }
         </style>
         """,
         unsafe_allow_html=True,
     )
-    bcol1, bcol2, _ = st.columns([1, 1, 3])
+    bcol1, bcol2, _ = st.columns([1, 1, 3], gap="small")
     with bcol1:
         activo_a = st.session_state.modo_click == "A"
-        if st.button(
-            "📍",
-            key="btn_modo_a",
-            help="Establecer origen (A)",
-            type="primary" if activo_a else "secondary",
-        ):
+        if st.button("🟢", key="btn_modo_a", help="Establecer origen (A)",
+                     type="primary" if activo_a else "secondary"):
             st.session_state.modo_click = "A"
             st.rerun()
     with bcol2:
         activo_b = st.session_state.modo_click == "B"
-        if st.button(
-            "🏁",
-            key="btn_modo_b",
-            help="Establecer destino (B)",
-            type="primary" if activo_b else "secondary",
-        ):
+        if st.button("🔴", key="btn_modo_b", help="Establecer destino (B)",
+                     type="primary" if activo_b else "secondary"):
             st.session_state.modo_click = "B"
             st.rerun()
 
-    # Botón para limpiar selección
     if origen_activo or destino_activo:
         if st.button("🗑️ Limpiar selección", use_container_width=True):
-            st.session_state.origen           = None
-            st.session_state.destino          = None
-            st.session_state.sel_origen       = OPCION_MAPA
-            st.session_state.sel_destino      = OPCION_MAPA
-            st.session_state.waypoints_activos = None
-            st.session_state.color_ruta       = AZUL_MARINO
-            st.session_state.modo_click       = "A"
-            st.session_state.ultimo_click     = None
+            st.session_state.origen              = None
+            st.session_state.destino             = None
+            st.session_state.ruta_rapida_origen  = None
+            st.session_state.ruta_rapida_destino = None
+            st.session_state.waypoints_activos   = None
+            st.session_state.color_ruta          = AZUL_MARINO
+            st.session_state.modo_click          = "A"
+            st.session_state.ultimo_click        = None
             st.rerun()
 
 
 with col_mapa:
-    # ── Selector de capa de mapa ──────────────────────────────────────
-    _opciones_capa = {
-        "🗺️ Estándar":  "estandar",
-        "🌑 Oscuro":     "oscuro",
-        "🚗 Tráfico":    "trafico",
-    }
-    _capa_display = st.radio(
-        "Capa",
-        options=list(_opciones_capa.keys()),
-        index=list(_opciones_capa.values()).index(
-            st.session_state.get("capa_mapa", "estandar")
-        ),
-        horizontal=True,
-        label_visibility="collapsed",
+    _modo_oscuro = st.checkbox("🌙 Mapa oscuro", value=False)
+    st.session_state.capa_mapa = "oscuro" if _modo_oscuro else "estandar"
+    st.markdown(
+        """<style>
+        iframe[title="streamlit_folium.st_folium"] {
+            display: block !important;
+            margin-bottom: 0 !important;
+            margin-top: 0 !important;
+        }
+        [data-testid="stCustomComponentV1"] {
+            line-height: 0 !important;
+            margin-bottom: 0 !important;
+            padding-bottom: 0 !important;
+        }
+        </style>""",
+        unsafe_allow_html=True,
     )
-    st.session_state.capa_mapa = _opciones_capa[_capa_display]
-
-    # Renderizar mapa y capturar clic
     mapa_out = render_mapa_od(
-        origen_activo,
-        destino_activo,
-        waypoints_activos,
+        origen_activo, destino_activo, waypoints_activos,
         color=st.session_state.color_ruta,
         capa_mapa=st.session_state.capa_mapa,
     )
-
-    # ── Procesar clic en el mapa ──────────────────────────────────────
-    # Compara el clic actual con el último procesado para evitar repetición.
     if mapa_out and mapa_out.get("last_clicked"):
-        click      = mapa_out["last_clicked"]
-        click_key  = (round(click["lat"], 5), round(click["lng"], 5))
-
+        click     = mapa_out["last_clicked"]
+        click_key = (round(click["lat"], 5), round(click["lng"], 5))
         if click_key != st.session_state.ultimo_click:
             st.session_state.ultimo_click = click_key
             nombre_click = _reverse_geocode(click["lat"], click["lng"])
-            punto = {"lat": click["lat"], "lon": click["lng"],
-                     "nombre": nombre_click}
-
+            punto = {"lat": click["lat"], "lon": click["lng"], "nombre": nombre_click}
             if st.session_state.modo_click == "A":
-                st.session_state.origen       = punto
-                st.session_state.sel_origen   = OPCION_MAPA
-                st.session_state.waypoints_activos = None
-                st.session_state.color_ruta   = AZUL_MARINO
-                # Auto-avanzar al modo B para que el siguiente clic fije destino
-                st.session_state.modo_click   = "B"
+                st.session_state.origen             = punto
+                st.session_state.ruta_rapida_origen = None
+                st.session_state.waypoints_activos  = None
+                st.session_state.color_ruta         = AZUL_MARINO
+                st.session_state.modo_click         = "B"
             else:
-                st.session_state.destino      = punto
-                st.session_state.sel_destino  = OPCION_MAPA
-                st.session_state.waypoints_activos = None
-                # Volver a modo A para permitir redefinir origen
-                st.session_state.modo_click   = "A"
-
+                st.session_state.destino              = punto
+                st.session_state.ruta_rapida_destino  = None
+                st.session_state.waypoints_activos    = None
+                st.session_state.modo_click           = "A"
             st.rerun()
 
 
-# ══════════════════════════════════════════════════════════════════════
-# RESULTADOS — se muestran tras presionar "Predecir trayecto"
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
+# RESULTADOS
+# ════════════════════════════════════════════════════════════════════════════
 
 if predecir and corredor_activo:
 
@@ -1576,29 +1507,23 @@ if predecir and corredor_activo:
 
     _NOMBRES_ESTADO = {0: "Fluido", 1: "Lento", 2: "Congestionado"}
     estado_nombre   = _NOMBRES_ESTADO[res["estado_inicial"]]
-    nivel, color_nivel, etiq_nivel = _nivel_riesgo(
-        res["estado_inicial"], res["p90"], res["p50"]
-    )
+    nivel, color_nivel, etiq_nivel = _nivel_riesgo(res["estado_inicial"], res["p90"], res["p50"])
 
-    st.markdown("---")
     origen_label  = origen_activo["nombre"] if origen_activo else "?"
     destino_label = destino_activo["nombre"] if destino_activo else "?"
-    _fuente_ruta = corredor_activo.get("fuente_ruta", "haversine_estimada")
-    _icono_ruta  = "🛣️" if _fuente_ruta == "tomtom" else "📐"
-    _tip_ruta    = ("ruta real TomTom"
-                    if _fuente_ruta == "tomtom"
-                    else "estimación Haversine×1.4")
+    _fuente_ruta  = corredor_activo.get("fuente_ruta", "haversine_estimada")
+    _icono_ruta   = "🛣️" if _fuente_ruta == "tomtom" else "📐"
+    _tip_ruta     = ("ruta real TomTom" if _fuente_ruta == "tomtom" else "estimación Haversine×1.4")
+
     st.markdown(
         f"### Resultados · {origen_label} → {destino_label}  "
         f"<span style='font-size:0.85rem;color:#888;font-weight:400;'>"
-        f"{hora_salida:02d}:00 h · {dia_nombre} · "
+        f"{_hora:02d}:{_minutos:02d} h · {dia_nombre} · "
         f"{_icono_ruta} {corredor_activo['distancia_km']} km "
         f"<span style='font-size:0.75rem;'>({_tip_ruta})</span></span>",
         unsafe_allow_html=True,
     )
 
-    # ── Métricas resumen ─────────────────────────────────────────────
-    # Fila 1: P50 destacado
     vel_media = corredor_activo["distancia_km"] / (res["p50"] / 60)
     st.markdown(
         f"""
@@ -1612,8 +1537,7 @@ if predecir and corredor_activo:
                 </div>
                 <div style="color:white;font-size:2.6rem;font-weight:800;
                             line-height:1.1;margin-top:2px;">
-                    {res['p50']:.0f} <span style="font-size:1.2rem;
-                    font-weight:400;">min</span>
+                    {res['p50']:.0f} <span style="font-size:1.2rem;font-weight:400;">min</span>
                 </div>
             </div>
             <div style="color:#A8C7E8;font-size:0.85rem;line-height:1.7;">
@@ -1624,7 +1548,7 @@ if predecir and corredor_activo:
         """,
         unsafe_allow_html=True,
     )
-    # Fila 2: P10 / P90 / Banda / Velocidad — cards HTML (sin truncamiento)
+
     _CARD = (
         "<div style='background:#112233;border:1px solid rgba(29,158,117,0.30);"
         "border-radius:10px;padding:1rem 1.2rem;min-width:160px;"
@@ -1640,104 +1564,73 @@ if predecir and corredor_activo:
     m2, m3, m4, m5 = st.columns(4)
     with m2:
         delta_p10 = res["p10"] - res["p50"]
-        st.markdown(_CARD.format(
-            label="P10 · Optimista",
-            value=f"{res['p10']:.0f} min",
-            vcolor=VERDE,
-            delta=f"{delta_p10:.0f} min vs P50",
-            dcolor=VERDE,
-        ), unsafe_allow_html=True)
+        st.markdown(_CARD.format(label="P10 · Optimista", value=f"{res['p10']:.0f} min",
+                                  vcolor=VERDE, delta=f"{delta_p10:.0f} min vs P50", dcolor=VERDE),
+                    unsafe_allow_html=True)
     with m3:
         delta_p90 = res["p90"] - res["p50"]
-        st.markdown(_CARD.format(
-            label="P90 · Pesimista",
-            value=f"{res['p90']:.0f} min",
-            vcolor=ROJO,
-            delta=f"+{delta_p90:.0f} min vs P50",
-            dcolor=ROJO,
-        ), unsafe_allow_html=True)
+        st.markdown(_CARD.format(label="P90 · Pesimista", value=f"{res['p90']:.0f} min",
+                                  vcolor=ROJO, delta=f"+{delta_p90:.0f} min vs P50", dcolor=ROJO),
+                    unsafe_allow_html=True)
     with m4:
         banda = res["p90"] - res["p10"]
-        st.markdown(_CARD.format(
-            label="Banda P10 – P90",
-            value=f"{banda:.0f} min",
-            vcolor=AZUL_MARINO,
-            delta="amplitud de incertidumbre",
-            dcolor="#999",
-        ), unsafe_allow_html=True)
+        st.markdown(_CARD.format(label="Banda P10 — P90", value=f"{banda:.0f} min",
+                                  vcolor=AZUL_MARINO, delta="amplitud de incertidumbre", dcolor="#999"),
+                    unsafe_allow_html=True)
     with m5:
-        st.markdown(_CARD.format(
-            label="Velocidad media",
-            value=f"{vel_media:.1f} km/h",
-            vcolor=AZUL_MARINO,
-            delta=f"{corredor_activo['distancia_km']} km / P50",
-            dcolor="#999",
-        ), unsafe_allow_html=True)
+        st.markdown(_CARD.format(label="Velocidad media", value=f"{vel_media:.1f} km/h",
+                                  vcolor=AZUL_MARINO, delta=f"{corredor_activo['distancia_km']} km / P50",
+                                  dcolor="#999"),
+                    unsafe_allow_html=True)
 
     st.divider()
 
-    # ── Gauge (centrado, ancho ~60% de la página) ─────────────────────
     _, col_g, _ = st.columns([1, 3, 1])
     with col_g:
         st.plotly_chart(
-            render_gauge(res["p50"], res["p10"], res["p90"],
-                         corredor_activo["distancia_km"]),
-            use_container_width=True,
-            config={"displayModeBar": False},
+            render_gauge(res["p50"], res["p10"], res["p90"], corredor_activo["distancia_km"]),
+            use_container_width=True, config={"displayModeBar": False},
         )
 
     st.divider()
 
-    # ── Semáforo (card ancha independiente) ───────────────────────────
     _, col_s, _ = st.columns([1, 3, 1])
     with col_s:
-        render_semaforo(nivel, etiq_nivel, res["ratio"],
-                        estado_nombre, color_nivel)
+        render_semaforo(nivel, etiq_nivel, res["ratio"], estado_nombre, color_nivel)
 
     st.divider()
 
-    # ── Banda de incertidumbre P10 – P50 – P90 ────────────────────────
     st.plotly_chart(
         render_banda_incertidumbre(res["p10"], res["p50"], res["p90"]),
-        use_container_width=True,
-        config={"displayModeBar": False},
+        use_container_width=True, config={"displayModeBar": False},
     )
 
     st.divider()
 
-    # ── Histograma de distribución ────────────────────────────────────
     st.plotly_chart(
         render_histograma(res["tiempos"], res["p10"], res["p50"], res["p90"]),
-        use_container_width=True,
-        config={"displayModeBar": False},
+        use_container_width=True, config={"displayModeBar": False},
     )
 
     st.divider()
 
-    # ── Mapa de la ruta ───────────────────────────────────────────────
     if FOLIUM_OK and origen_activo and destino_activo:
         st.markdown(
             "<div style='font-size:0.85rem;font-weight:600;color:#444;"
             "margin-bottom:0.4rem;'>🗺️ Ruta en el mapa</div>",
             unsafe_allow_html=True,
         )
-        # Mapa de sólo lectura — usa clave diferente al mapa interactivo
         _m = __import__("folium").Map(
             location=[origen_activo["lat"], origen_activo["lon"]],
-            zoom_start=12,
-            tiles="CartoDB positron",
+            zoom_start=12, tiles="CartoDB positron",
         )
         if len(corredor_activo["waypoints"]) >= 2:
             __import__("folium").PolyLine(
                 locations=corredor_activo["waypoints"],
                 color=corredor_activo["color_mapa"],
-                weight=6, opacity=0.85,
-                tooltip="Ruta simulada",
+                weight=6, opacity=0.85, tooltip="Ruta simulada",
             ).add_to(_m)
-        for _pt, _ico, _bg in [
-            (origen_activo,  "A", VERDE),
-            (destino_activo, "B", ROJO),
-        ]:
+        for _pt, _ico, _bg in [(origen_activo, "A", VERDE), (destino_activo, "B", ROJO)]:
             __import__("folium").Marker(
                 location=[_pt["lat"], _pt["lon"]],
                 icon=__import__("folium").DivIcon(html=(
@@ -1750,8 +1643,7 @@ if predecir and corredor_activo:
                 tooltip=_pt["nombre"],
             ).add_to(_m)
         from streamlit_folium import st_folium as _stf
-        _stf(_m, key="mapa_resultados", width="100%", height=320,
-             returned_objects=[])
+        _stf(_m, key="mapa_resultados", width="100%", height=320, returned_objects=[])
         st.divider()
 
     st.caption(
@@ -1760,7 +1652,6 @@ if predecir and corredor_activo:
         f"P10/P50/P90 = percentiles 10, 50 y 90 de los tiempos simulados."
     )
 
-    # ── Detalles técnicos (colapsado por defecto) ─────────────────────
     with st.expander("🔬 Detalles técnicos de la simulación", expanded=False):
         col_d1, col_d2 = st.columns(2)
         with col_d1:
@@ -1784,9 +1675,9 @@ if predecir and corredor_activo:
                 <div style="font-size:0.85rem;color:#444;line-height:1.8;">
                     <b>Ruta calculada</b><br>
                     Distancia: <code>{corredor_activo['distancia_km']} km</code><br>
-                    Fuente distancia: <code>{corredor_activo.get('fuente_ruta','—')}</code><br>
+                    Fuente distancia: <code>{corredor_activo.get('fuente_ruta','?')}</code><br>
                     Tiempo base (sin tráfico):
-                    <code>{corredor_activo.get('tiempo_base_min','—')} min</code><br>
+                    <code>{corredor_activo.get('tiempo_base_min','?')} min</code><br>
                     Ratio congestión: <code>{res['ratio']:.3f}</code>
                 </div>
                 """,
@@ -1800,7 +1691,7 @@ if predecir and corredor_activo:
                 <div style="background:#E8F5F1;border-radius:8px;
                             padding:0.7rem 1rem;font-size:0.83rem;
                             color:#1D6B52;margin-top:0.5rem;">
-                    <b>☁️ Factor climático OWM</b> —
+                    <b>🌤 Factor climático OWM</b> —
                     {clima.descripcion} ·
                     Factor: ×{fclima.factor_multiplicador:.2f} ·
                     Alerta: <b>{fclima.nivel_alerta}</b>
@@ -1810,101 +1701,56 @@ if predecir and corredor_activo:
             )
 
 elif not (origen_activo and destino_activo):
-    # ── Estado inicial: instrucciones ─────────────────────────────────
-    st.markdown("<br>", unsafe_allow_html=True)
     st.info(
         "**Cómo usar VialAI:**\n\n"
-        "1. **Ruta rápida** → clic en uno de los 5 corredores del sidebar.\n"
-        "2. **Selectbox** → escribe en los campos Origen / Destino para filtrar.\n"
-        "3. **Clic en mapa** → usa los botones 📍 A / B y haz clic directamente "
+        "1. **Ruta rápida** — clic en uno de los 5 corredores del sidebar.\n"
+        "2. **Selectbox** — escribe en los campos Origen / Destino para filtrar.\n"
+        "3. **Clic en mapa** — usa los botones 🟢 A / 🔴 B y haz clic directamente "
         "sobre el mapa para fijar los puntos.\n\n"
         "Luego pulsa **🚀 Predecir trayecto**.",
         icon="🗺️",
     )
 
-# ══════════════════════════════════════════════════════════════════════
+
+# ════════════════════════════════════════════════════════════════════════════
 # PIE DE PÁGINA
-# ══════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
 
 st.markdown(
-    f"""
-    <div style="background:#0a1628;border-top:1px solid rgba(29,158,117,0.25);
-                margin-top:3rem;padding:2rem 2.5rem 1.5rem;border-radius:0 0 12px 12px;">
+    "<div style='background:#0a1628;border-top:1px solid rgba(29,158,117,0.25);"
+    "margin-top:3rem;padding:1.5rem 2rem 0.5rem;'>"
+    "<div style='display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;'>"
+    "<div style='font-size:1.5rem;font-weight:800;letter-spacing:-0.02em;'>"
+    "<span style='color:#0C447C;'>Vial</span><span style='color:#1D9E75;'>AI</span>"
+    "</div>"
+    "<div style='color:#8BA7BE;font-size:0.8rem;line-height:1.4;'>"
+    "Predicción estocástica de tiempos de viaje · ZMVM"
+    "</div></div></div>",
+    unsafe_allow_html=True,
+)
 
-        <!-- Logo y descripción -->
-        <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;">
-            <div style="font-size:1.5rem;font-weight:800;letter-spacing:-0.02em;">
-                <span style="color:{AZUL_MARINO};">Vial</span><span
-                      style="color:{VERDE};">AI</span>
-            </div>
-            <div style="color:#8BA7BE;font-size:0.8rem;line-height:1.4;">
-                Predicción estocástica de tiempos de viaje · ZMVM<br>
-                Motor: Monte Carlo + Cadenas de Markov
-            </div>
-        </div>
-
-        <!-- Cards de respaldo matemático -->
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);
-                    gap:0.8rem;margin-bottom:1.4rem;">
-            <a href="https://es.wikipedia.org/wiki/Cadena_de_Márkov"
-               target="_blank" style="text-decoration:none;">
-                <div style="background:#112233;border:1px solid rgba(29,158,117,0.25);
-                            border-radius:8px;padding:0.7rem 0.9rem;
-                            transition:border-color 0.2s;"
-                     onmouseover="this.style.borderColor='{VERDE}'"
-                     onmouseout="this.style.borderColor='rgba(29,158,117,0.25)'">
-                    <div style="font-size:0.75rem;color:{VERDE};
-                                font-weight:700;margin-bottom:3px;">
-                        📊 Cadenas de Markov
-                    </div>
-                    <div style="font-size:0.7rem;color:#8BA7BE;line-height:1.4;">
-                        Modelo de transición entre estados de tráfico
-                        (fluido / lento / congestionado).
-                    </div>
-                </div>
-            </a>
-            <a href="https://es.wikipedia.org/wiki/Método_de_Montecarlo"
-               target="_blank" style="text-decoration:none;">
-                <div style="background:#112233;border:1px solid rgba(29,158,117,0.25);
-                            border-radius:8px;padding:0.7rem 0.9rem;"
-                     onmouseover="this.style.borderColor='{VERDE}'"
-                     onmouseout="this.style.borderColor='rgba(29,158,117,0.25)'">
-                    <div style="font-size:0.75rem;color:{VERDE};
-                                font-weight:700;margin-bottom:3px;">
-                        🎲 Simulación Monte Carlo
-                    </div>
-                    <div style="font-size:0.7rem;color:#8BA7BE;line-height:1.4;">
-                        10 000 trayectorias estocásticas para estimar
-                        la distribución del tiempo de viaje.
-                    </div>
-                </div>
-            </a>
-            <a href="https://docs.scipy.org/doc/scipy/reference/stats.html"
-               target="_blank" style="text-decoration:none;">
-                <div style="background:#112233;border:1px solid rgba(29,158,117,0.25);
-                            border-radius:8px;padding:0.7rem 0.9rem;"
-                     onmouseover="this.style.borderColor='{VERDE}'"
-                     onmouseout="this.style.borderColor='rgba(29,158,117,0.25)'">
-                    <div style="font-size:0.75rem;color:{VERDE};
-                                font-weight:700;margin-bottom:3px;">
-                        📐 Distribuciones de probabilidad
-                    </div>
-                    <div style="font-size:0.7rem;color:#8BA7BE;line-height:1.4;">
-                        Distribuciones Normal truncada por estado vial
-                        implementadas con SciPy Stats.
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <!-- Copyright -->
-        <div style="text-align:center;font-size:0.72rem;color:#4A6070;
-                    border-top:1px solid rgba(255,255,255,0.06);
-                    padding-top:0.9rem;">
-            © 2026 VialAI · Diplomado en Ciencia de Datos ·
-            Datos: TomTom · OpenWeatherMap · C5 CDMX
-        </div>
-    </div>
-    """,
+st.markdown(
+    "<div style='background:#0a1628;padding:0 2rem 0.5rem;'>"
+    "<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;margin-bottom:1rem;'>"
+    "<a href='https://es.wikipedia.org/wiki/Cadena_de_M%C3%A1rkov' target='_blank' style='text-decoration:none;'>"
+    "<div style='background:#112233;border:1px solid rgba(29,158,117,0.25);border-radius:8px;padding:0.7rem 0.9rem;'>"
+    "<div style='font-size:0.75rem;color:#1D9E75;font-weight:700;margin-bottom:3px;'>🔗 Cadenas de Markov</div>"
+    "<div style='font-size:0.7rem;color:#8BA7BE;line-height:1.4;'>Modelo de transición entre estados de tráfico.</div>"
+    "</div></a>"
+    "<a href='https://es.wikipedia.org/wiki/M%C3%A9todo_de_Montecarlo' target='_blank' style='text-decoration:none;'>"
+    "<div style='background:#112233;border:1px solid rgba(29,158,117,0.25);border-radius:8px;padding:0.7rem 0.9rem;'>"
+    "<div style='font-size:0.75rem;color:#1D9E75;font-weight:700;margin-bottom:3px;'>🎲 Simulación Monte Carlo</div>"
+    "<div style='font-size:0.7rem;color:#8BA7BE;line-height:1.4;'>10 000 trayectorias estocásticas.</div>"
+    "</div></a>"
+    "<a href='https://docs.scipy.org/doc/scipy/reference/stats.html' target='_blank' style='text-decoration:none;'>"
+    "<div style='background:#112233;border:1px solid rgba(29,158,117,0.25);border-radius:8px;padding:0.7rem 0.9rem;'>"
+    "<div style='font-size:0.75rem;color:#1D9E75;font-weight:700;margin-bottom:3px;'>📊 Distribuciones de probabilidad</div>"
+    "<div style='font-size:0.7rem;color:#8BA7BE;line-height:1.4;'>Distribuciones Normal truncada con SciPy Stats.</div>"
+    "</div></a>"
+    "</div>"
+    "<div style='text-align:center;font-size:0.72rem;color:#4A6070;"
+    "border-top:1px solid rgba(255,255,255,0.06);padding:0.9rem 0 1rem;'>"
+    "© 2026 VialAI · Diplomado en Ciencia de Datos · Datos: TomTom · OpenWeatherMap · C5 CDMX"
+    "</div></div>",
     unsafe_allow_html=True,
 )
