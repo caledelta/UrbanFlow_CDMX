@@ -47,6 +47,7 @@ from typing import Any
 
 import pandas as pd
 import requests
+from pydantic import ValidationError
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -56,6 +57,15 @@ from tenacity import (
 )
 
 logger = logging.getLogger(__name__)
+
+try:
+    from src.models.schemas import (
+        RespuestaClima as _RespuestaClima,
+        NIVEL_INTERNO_A_COLOR as _NIVEL_A_COLOR,
+    )
+    _SCHEMAS_OK = True
+except ImportError:
+    _SCHEMAS_OK = False
 
 # ──────────────────────────────────────────────────────────────────────
 # Constantes
@@ -520,6 +530,21 @@ def calcular_factor_congestion(condicion: CondicionClimatica) -> FactorClimatico
     if f_codigo > 1.0:
         partes.append(condicion.descripcion)
     descripcion = "; ".join(partes) if partes else "condiciones normales"
+
+    # ── Validación Pydantic (Fase 1 Structured Outputs) ──────────────
+    if _SCHEMAS_OK:
+        try:
+            _RespuestaClima(
+                descripcion=descripcion,
+                lluvia_mm_h=condicion.lluvia_1h_mm,
+                visibilidad_km=round(condicion.visibilidad_m / 1000.0, 3),
+                factor_velocidad=factor_final,
+                nivel_alerta=_NIVEL_A_COLOR[nivel],
+            )
+        except ValidationError as exc:
+            raise OWMAPIError(
+                f"Datos climáticos fuera de rango esperado: {exc}"
+            ) from exc
 
     return FactorClimatico(
         factor_multiplicador = factor_final,

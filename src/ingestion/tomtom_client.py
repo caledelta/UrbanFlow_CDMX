@@ -34,6 +34,7 @@ from typing import Any
 
 import pandas as pd
 import requests
+from pydantic import ValidationError
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -43,6 +44,13 @@ from tenacity import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Importación diferida para evitar ciclos si otros módulos importan este
+try:
+    from src.models.schemas import RespuestaTomTom as _RespuestaTomTom
+    _SCHEMAS_OK = True
+except ImportError:
+    _SCHEMAS_OK = False
 
 # ──────────────────────────────────────────────────────────────────────
 # Constantes
@@ -398,7 +406,22 @@ def _parsear_respuesta(
 
     vel_actual = float(fsd.get("currentSpeed",        0))
     vel_libre  = float(fsd.get("freeFlowSpeed",       1))   # evitar ÷0
+    confianza  = float(fsd.get("confidence",          1.0))
     ratio      = round(vel_actual / vel_libre, 4) if vel_libre > 0 else 0.0
+
+    # ── Validación Pydantic (Fase 1 Structured Outputs) ──────────────
+    if _SCHEMAS_OK:
+        try:
+            _RespuestaTomTom(
+                velocidad_actual_kmh=vel_actual,
+                velocidad_libre_kmh=vel_libre,
+                confianza=confianza,
+                ratio_flujo=ratio,
+            )
+        except ValidationError as exc:
+            raise TomTomAPIError(
+                f"Datos de TomTom fuera de rango esperado: {exc}"
+            ) from exc
 
     return SegmentoVial(
         latitud               = lat_consulta,
@@ -407,7 +430,7 @@ def _parsear_respuesta(
         velocidad_libre_kmh   = vel_libre,
         tiempo_viaje_actual_s = int(fsd.get("currentTravelTime",  0)),
         tiempo_viaje_libre_s  = int(fsd.get("freeFlowTravelTime", 0)),
-        confianza             = float(fsd.get("confidence",        1.0)),
+        confianza             = confianza,
         clase_vial            = str(fsd.get("frc",                "FRC_DESCONOCIDA")),
         cierre_vial           = bool(fsd.get("roadClosure",       False)),
         ratio_congestion      = ratio,
