@@ -85,6 +85,12 @@ try:
 except ImportError:
     FOLIUM_OK = False
 
+try:
+    from src.agent.agent import VialAIAgent
+    VIALAI_OK = True
+except ImportError:
+    VIALAI_OK = False
+
 
 # ════════════════════════════════════════════════════════════════════════════
 # CONSTANTES DE COLOR
@@ -719,6 +725,7 @@ _DEFAULTS: dict = {
     "ruta_rapida_origen":  None,
     "ruta_rapida_destino": None,
     "capa_mapa": "estandar",
+    "chat_historial": [],
 }
 for _k, _v in _DEFAULTS.items():
     if _k not in st.session_state:
@@ -946,6 +953,54 @@ with st.sidebar:
     )
     if boton_deshabilitado:
         st.caption("⚠ Define origen y destino para habilitar")
+
+    # ── Chat VialAI ──────────────────────────────────────────────────────────
+    st.markdown(
+        "<hr style='border-color:rgba(255,255,255,0.25);margin:1.1rem 0 0.8rem;'>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "<div style='font-size:0.78rem;color:#A8C4D8;text-transform:uppercase;"
+        "letter-spacing:.06em;font-weight:600;margin-bottom:6px;'>"
+        "💬 Asistente VialAI</div>",
+        unsafe_allow_html=True,
+    )
+
+    _BIENVENIDA = (
+        "Hola, soy VialAI 🚦 Pregúntame sobre tu trayecto, "
+        "condiciones de tráfico o el mejor horario para salir."
+    )
+
+    # Contenedor scrollable para el historial de mensajes
+    _chat_box = st.container(height=260, border=False)
+    with _chat_box:
+        with st.chat_message("assistant"):
+            st.write(_BIENVENIDA)
+        for _msg in st.session_state.chat_historial:
+            with st.chat_message(_msg["role"]):
+                st.write(_msg["content"])
+
+    # Input de lenguaje natural
+    _prompt = st.chat_input("Pregunta a VialAI…")
+    if _prompt:
+        st.session_state.chat_historial.append({"role": "user", "content": _prompt})
+        _historial_api = [
+            {"role": m["role"], "content": m["content"]}
+            for m in st.session_state.chat_historial[:-1]
+        ]
+        with st.spinner("VialAI está pensando…"):
+            if VIALAI_OK:
+                _vialai = VialAIAgent()
+                _respuesta = _vialai.run(_prompt, historial=_historial_api)
+            else:
+                _respuesta = (
+                    "⚠️ El módulo del agente no está disponible. "
+                    "Verifica la instalación de src/agent/agent.py."
+                )
+        st.session_state.chat_historial.append(
+            {"role": "assistant", "content": _respuesta}
+        )
+        st.rerun()
 
 
 # ════════════════════════════════════════════════════════════════════════════
