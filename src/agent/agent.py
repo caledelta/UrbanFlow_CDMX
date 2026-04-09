@@ -32,6 +32,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+from pathlib import Path
 from typing import Any
 
 import anthropic
@@ -45,7 +46,12 @@ from src.agent.tools import (
     verificar_perturbaciones,
 )
 
-load_dotenv()
+# Ruta absoluta al .env para que funcione independientemente del cwd
+_ENV_PATH = Path(__file__).resolve().parent.parent.parent / ".env"
+load_dotenv(dotenv_path=_ENV_PATH)
+
+_key = os.getenv("ANTHROPIC_API_KEY", "")
+print(f"[VialAI] KEY cargada: {'SI' if _key else 'NO'} ({len(_key)} chars) — .env: {_ENV_PATH}")
 
 logger = logging.getLogger(__name__)
 
@@ -154,8 +160,8 @@ class VialAIAgent:
         try:
             return self._loop_tool_use(messages)
 
-        except anthropic.AuthenticationError:
-            logger.error("ANTHROPIC_API_KEY inválida o no configurada.")
+        except (anthropic.AuthenticationError, TypeError) as exc:
+            logger.error("ANTHROPIC_API_KEY inválida o no configurada: %s", exc)
             return (
                 "No puedo conectarme al servicio en este momento. "
                 "Verifica que la clave de API esté configurada correctamente."

@@ -990,8 +990,12 @@ with st.sidebar:
         ]
         with st.spinner("VialAI está pensando…"):
             if VIALAI_OK:
-                _vialai = VialAIAgent()
-                _respuesta = _vialai.run(_prompt, historial=_historial_api)
+                try:
+                    _vialai = VialAIAgent()
+                    _respuesta = _vialai.run(_prompt, historial=_historial_api)
+                except Exception as _exc:
+                    st.error(f"Error al inicializar el agente: {_exc}")
+                    _respuesta = f"⚠️ Error al inicializar el agente: {_exc}"
             else:
                 _respuesta = (
                     "⚠️ El módulo del agente no está disponible. "
@@ -1221,7 +1225,7 @@ def render_banda_incertidumbre(p10: float, p50: float, p90: float) -> go.Figure:
                    range=[max(0, p10 - 10), p90 + 10],
                    showgrid=True, gridcolor="rgba(255,255,255,0.08)",
                    tickfont=dict(color="#8BA7BE"),
-                   titlefont=dict(color="#8BA7BE")),
+                   title_font=dict(color="#8BA7BE")),
         yaxis=dict(visible=False, range=[0, 1]),
         paper_bgcolor="#0D1B2A", plot_bgcolor="#0D1B2A",
         title=dict(text="Banda de incertidumbre P10 — P50 — P90",
