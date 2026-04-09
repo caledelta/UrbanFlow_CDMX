@@ -32,6 +32,10 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+# ── Variables de entorno (ruta absoluta para que funcione con cualquier cwd) ─
+from dotenv import load_dotenv
+load_dotenv(ROOT / ".env")
+
 import numpy as np
 import pandas as pd
 import streamlit as st

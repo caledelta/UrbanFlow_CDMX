@@ -47,11 +47,16 @@ from src.agent.tools import (
 )
 
 # Ruta absoluta al .env para que funcione independientemente del cwd
-_ENV_PATH = Path(__file__).resolve().parent.parent.parent / ".env"
-load_dotenv(dotenv_path=_ENV_PATH)
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+ENV_PATH = PROJECT_ROOT / ".env"
+load_dotenv(dotenv_path=ENV_PATH, override=False)
 
-_key = os.getenv("ANTHROPIC_API_KEY", "")
-print(f"[VialAI] KEY cargada: {'SI' if _key else 'NO'} ({len(_key)} chars) — .env: {_ENV_PATH}")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+if not ANTHROPIC_API_KEY:
+    raise RuntimeError(
+        f"ANTHROPIC_API_KEY no encontrada. Verificado en: {ENV_PATH}. "
+        f"Existe archivo: {ENV_PATH.exists()}"
+    )
 
 logger = logging.getLogger(__name__)
 
