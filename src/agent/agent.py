@@ -44,6 +44,7 @@ from src.agent.tools import (
     detectar_eventos_activos,
     get_tools_schema,
     predecir_tiempo_viaje,
+    seleccionar_mejor_ruta,
     verificar_perturbaciones,
 )
 
@@ -71,6 +72,7 @@ _DISPATCH: dict[str, Any] = {
     "consultar_trafico_ahora":  consultar_trafico_ahora,
     "verificar_perturbaciones": verificar_perturbaciones,
     "detectar_eventos_activos": detectar_eventos_activos,
+    "seleccionar_mejor_ruta":   seleccionar_mejor_ruta,
 }
 
 

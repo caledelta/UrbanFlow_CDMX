@@ -398,8 +398,8 @@ class TestEjecutarHerramienta:
             resultado = agente._ejecutar_herramienta("herramienta_rota", {})
         assert "error" in resultado
 
-    def test_dispatch_contiene_cuatro_herramientas(self, agente):
-        assert len(_DISPATCH) == 4
+    def test_dispatch_contiene_cinco_herramientas(self, agente):
+        assert len(_DISPATCH) == 5
 
     def test_dispatch_tiene_claves_correctas(self, agente):
         assert set(_DISPATCH.keys()) == {
@@ -407,6 +407,7 @@ class TestEjecutarHerramienta:
             "consultar_trafico_ahora",
             "verificar_perturbaciones",
             "detectar_eventos_activos",
+            "seleccionar_mejor_ruta",
         }
 
 

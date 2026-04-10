@@ -85,6 +85,14 @@ except ImportError:
     MODULOS_ROUTING_OK = False
 
 try:
+    from src.simulation.evaluador_rutas import (
+        evaluar_rutas, generar_explicacion_cambio_ruta, ResultadoRuta,
+    )
+    MODULOS_EVALUADOR_OK = True
+except ImportError:
+    MODULOS_EVALUADOR_OK = False
+
+try:
     import folium
     from streamlit_folium import st_folium
     FOLIUM_OK = True
@@ -99,6 +107,19 @@ except ImportError:
 
 
 # ════════════════════════════════════════════════════════════════════════════
+# UTILIDADES GENERALES
+# ════════════════════════════════════════════════════════════════════════════
+
+def safe_get(obj, key, default=None):
+    """Accede a atributo o clave de dict de forma segura."""
+    if obj is None:
+        return default
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
+
+
+# ════════════════════════════════════════════════════════════════════════════
 # CONSTANTES DE COLOR
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -106,6 +127,10 @@ AZUL_MARINO = "#0C447C"
 VERDE       = "#1D9E75"
 AMARILLO    = "#F5A623"
 ROJO        = "#D0021B"
+
+# Colores por índice de ruta (0=recomendada, 1=alternativa 1, 2=alternativa 2)
+COLORES_RUTAS       = {0: VERDE, 1: AMARILLO, 2: "#4A6FA5"}
+COLOR_COMPROMETIDA  = ROJO
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -399,6 +424,49 @@ def _obtener_ruta(lat1: float, lon1: float, lat2: float, lon2: float) -> dict:
         "waypoints":       interpolar_waypoints(lat1, lon1, lat2, lon2, n=8),
         "fuente":          "haversine_estimada",
     }
+
+
+@st.cache_data(show_spinner=False, ttl=3600)
+def _obtener_alternativas(
+    lat1: float, lon1: float,
+    lat2: float, lon2: float,
+    travel_mode: str = "car",
+) -> list:
+    """
+    Devuelve hasta 3 RutaVial (lista). El índice 0 es la ruta principal.
+    Si TomTom no está disponible o falla, retorna la ruta Haversine única.
+    Nunca lanza excepción.
+    """
+    api_key = os.getenv("TOMTOM_API_KEY", "")
+    if api_key and MODULOS_ROUTING_OK:
+        try:
+            cliente = TomTomRoutingClient(api_key=api_key)
+            rutas   = cliente.calcular_alternativas(
+                lat1, lon1, lat2, lon2,
+                max_alternativas=2,
+                travel_mode=travel_mode,
+            )
+            if rutas:
+                return rutas
+        except Exception:
+            pass
+    # Fallback: una sola ruta Haversine
+    dist_lineal = calcular_distancia(lat1, lon1, lat2, lon2)
+    dist_km     = round(dist_lineal * 1.4, 2)
+    if MODULOS_ROUTING_OK:
+        from src.ingestion.tomtom_routing import RutaVial as _RutaVial
+        return [_RutaVial(
+            distancia_km    = dist_km,
+            tiempo_base_min = round(dist_km / 30 * 60, 1),
+            waypoints       = interpolar_waypoints(lat1, lon1, lat2, lon2, n=8),
+            fuente          = "haversine_estimada",
+        )]
+    # RutaVial no disponible: devolver dict compatible con evaluar_rutas
+    class _Ruta:
+        def __init__(self, dist, wp):
+            self.distancia_km = dist
+            self.waypoints    = wp
+    return [_Ruta(dist_km, interpolar_waypoints(lat1, lon1, lat2, lon2, n=8))]
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -719,6 +787,96 @@ section[data-testid="stSidebar"] [data-testid="stExpander"] summary span {{
     color: {VERDE} !important;
     font-weight: 600 !important;
 }}
+
+/* ══ CALENDARIO — FONDO OSCURO, TEXTO VERDE ══ */
+div[data-testid="stSidebar"] div[data-testid="stDateInput"] > div {{
+    background-color: #0F1B2D !important;
+}}
+div[data-baseweb="calendar"] {{
+    background-color: #0F1B2D !important;
+}}
+div[data-baseweb="calendar"] * {{
+    color: {VERDE} !important;
+}}
+div[data-baseweb="calendar"] button {{
+    color: {VERDE} !important;
+    background-color: transparent !important;
+}}
+div[data-baseweb="calendar"] button:hover {{
+    background-color: {VERDE} !important;
+    color: #000000 !important;
+}}
+div[data-baseweb="calendar"] button[aria-selected="true"] {{
+    background-color: #F5A623 !important;
+    color: #000000 !important;
+    font-weight: 700 !important;
+}}
+div[data-baseweb="calendar"] button[aria-disabled="true"] {{
+    color: #2A3F5F !important;
+}}
+div[data-baseweb="calendar"] svg {{
+    fill: {VERDE} !important;
+}}
+div[data-baseweb="input"] input {{
+    color: {VERDE} !important;
+    background-color: #0F1B2D !important;
+}}
+div[data-baseweb="popover"] {{
+    background-color: #0F1B2D !important;
+    border: 1px solid {VERDE} !important;
+}}
+div[data-baseweb="select"] span,
+div[data-baseweb="select"] div {{
+    color: {VERDE} !important;
+}}
+div[data-baseweb="menu"] {{
+    background-color: #0F1B2D !important;
+}}
+div[data-baseweb="menu"] li {{
+    color: {VERDE} !important;
+}}
+div[data-baseweb="menu"] li:hover {{
+    background-color: {VERDE} !important;
+    color: #000000 !important;
+}}
+
+/* ── NUCLEAR: todos los botones del sidebar — fondo oscuro, texto blanco ─ */
+div[data-testid="stSidebar"] button {{
+    background-color: #1A2940 !important;
+    color: #FFFFFF !important;
+    border: 1.5px solid #4A6FA5 !important;
+    font-weight: 600 !important;
+}}
+div[data-testid="stSidebar"] button:hover {{
+    background-color: #F5A623 !important;
+    color: #000000 !important;
+    border-color: #F5A623 !important;
+}}
+div[data-testid="stSidebar"] button p,
+div[data-testid="stSidebar"] button span,
+div[data-testid="stSidebar"] button div {{
+    color: #FFFFFF !important;
+}}
+div[data-testid="stSidebar"] button:hover p,
+div[data-testid="stSidebar"] button:hover span,
+div[data-testid="stSidebar"] button:hover div {{
+    color: #000000 !important;
+}}
+
+/* ── Expander Configuración Avanzada ──────────────────────────────────── */
+div[data-testid="stSidebar"] .streamlit-expanderHeader {{
+    color: #E0E0E0 !important;
+    font-weight: 600 !important;
+    background-color: rgba(61, 90, 128, 0.3) !important;
+    border-radius: 6px !important;
+    padding: 8px !important;
+}}
+
+/* ── Caption y labels del sidebar ─────────────────────────────────────── */
+div[data-testid="stSidebar"] .stCaption,
+div[data-testid="stSidebar"] small {{
+    color: #B0C4DE !important;
+}}
 </style>
 """
 
@@ -759,6 +917,7 @@ _DEFAULTS: dict = {
     "ruta_rapida_destino": None,
     "capa_mapa": "estandar",
     "chat_historial": [],
+    "perfil_vehiculo": "🚗 Automóvil",
 }
 for _k, _v in _DEFAULTS.items():
     if _k not in st.session_state:
@@ -1014,6 +1173,10 @@ with st.sidebar:
         options=["🚗 Automóvil", "🏍️ Motocicleta"],
         horizontal=True,
         label_visibility="collapsed",
+        index=["🚗 Automóvil", "🏍️ Motocicleta"].index(
+            st.session_state.perfil_vehiculo
+        ),
+        key="perfil_vehiculo",
     )
 
     # ── Chat VialAI ──────────────────────────────────────────────────────────
@@ -1074,9 +1237,15 @@ with st.sidebar:
 # ════════════════════════════════════════════════════════════════════════════
 
 if origen_activo and destino_activo:
+    _travel_mode = "motorcycle" if "Motocicleta" in tipo_vehiculo else "car"
     _ruta = _obtener_ruta(
         origen_activo["lat"],  origen_activo["lon"],
         destino_activo["lat"], destino_activo["lon"],
+    )
+    _rutas_alternativas = _obtener_alternativas(
+        origen_activo["lat"],  origen_activo["lon"],
+        destino_activo["lat"], destino_activo["lon"],
+        travel_mode=_travel_mode,
     )
     dist_km_activo    = _ruta["distancia_km"]
     waypoints_activos = _ruta["waypoints"]
@@ -1092,9 +1261,10 @@ if origen_activo and destino_activo:
                             f"· {dist_km_activo} km"),
     }
 else:
-    corredor_activo   = None
-    dist_km_activo    = None
-    waypoints_activos = []
+    corredor_activo     = None
+    dist_km_activo      = None
+    waypoints_activos   = []
+    _rutas_alternativas = []
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -1155,6 +1325,43 @@ def simular_modo_demo(
     except Exception as e:
         st.warning(f"Error en simulación: {e}")
         return _resultado_fallback(corredor, hora, dia_idx)
+
+
+def _simular_multi_ruta(
+    rutas_viales: list,
+    hora: int,
+    dia_idx: int,
+    n_simulaciones: int,
+    tipo_vehiculo: str = "🚗 Automóvil",
+) -> list:
+    """
+    Evalúa múltiples rutas con Monte Carlo. Retorna lista[ResultadoRuta].
+    Si no hay módulos disponibles, retorna lista vacía.
+    """
+    if not MODULOS_SIMULACION_OK or not MODULOS_EVALUADOR_OK or not rutas_viales:
+        return []
+    cadena = obtener_cadena()
+    if cadena is None:
+        return []
+    ratio          = ratio_historico(hora, dia_idx)
+    estado_inicial = ratio_a_estado(ratio)
+    factor_cong    = 1.0 + max(0, (0.6 - ratio)) * 0.8
+    params_ajust = {
+        k: {
+            "media": max(round(v["media"] / factor_cong, 2), 1.0),
+            "std":   max(round(v["std"]   / factor_cong, 2), 0.5),
+            "min":   max(round(v["min"]   / factor_cong, 2), 1.0),
+            "max":   v["max"],
+        }
+        for k, v in VELOCIDAD_PARAMS.items()
+    }
+    params_ajust = ajustar_velocidad_por_vehiculo(params_ajust, tipo_vehiculo)
+    motor = MonteCarloEngine(
+        cadena, n_simulaciones=n_simulaciones,
+        velocidad_params=params_ajust,
+        rng=np.random.default_rng(42),
+    )
+    return evaluar_rutas(rutas_viales, motor, cadena, estado_inicial)
 
 
 def _resultado_fallback(corredor: dict, hora: int, dia_idx: int) -> dict:
@@ -1473,12 +1680,20 @@ with _col_titulo:
     st.markdown("### 🗺️ Mapa interactivo — ZMVM")
 with _col_reloj:
     _ahora = datetime.datetime.now()
+    _MESES_ES = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
+                 "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+    _DIAS_ES  = ["Lunes", "Martes", "Miércoles", "Jueves",
+                 "Viernes", "Sábado", "Domingo"]
+    _fecha_larga = (
+        f"{_DIAS_ES[_ahora.weekday()]} {_ahora.day} "
+        f"de {_MESES_ES[_ahora.month - 1]} de {_ahora.year}"
+    )
     st.markdown(
         f"<div style='text-align:right;padding-top:6px;'>"
         f"<div style='font-size:1.4rem;font-weight:800;color:#F0F4F8;"
         f"line-height:1.1;'>{_ahora.strftime('%H:%M')}</div>"
-        f"<div style='font-size:0.72rem;color:#8BA7BE;'>"
-        f"{_ahora.strftime('%d/%m/%Y')}</div>"
+        f"<div style='font-size:0.72rem;color:#B0C4DE;'>"
+        f"{_fecha_larga}</div>"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -1590,7 +1805,7 @@ with col_info:
             st.rerun()
 
     if origen_activo or destino_activo:
-        if st.button("🗑️ Limpiar selección", use_container_width=True):
+        if st.button("🗑️ Limpiar selección", type="primary", use_container_width=True):
             st.session_state.origen              = None
             st.session_state.destino             = None
             st.session_state.ruta_rapida_origen  = None
@@ -1655,11 +1870,16 @@ if predecir and corredor_activo:
     with st.spinner("🔄 Calculando ruta y simulando 10,000 trayectorias..."):
         if usar_api and MODULOS_PIPELINE_OK:
             res = simular_modo_api(corredor_activo, hora_salida, dia_idx, n_sims)
+            _resultados_rutas: list = []
         else:
             res = simular_modo_demo(
                 corredor_activo, hora_salida, dia_idx, n_sims,
                 tipo_vehiculo=tipo_vehiculo,
             )
+            # Evaluación multi-ruta (sobre las alternativas obtenidas antes)
+            _resultados_rutas = _simular_multi_ruta(
+                _rutas_alternativas, hora_salida, dia_idx, n_sims, tipo_vehiculo,
+            ) if _rutas_alternativas else []
 
     _NOMBRES_ESTADO = {0: "Fluido", 1: "Lento", 2: "Congestionado"}
     estado_nombre   = _NOMBRES_ESTADO[res["estado_inicial"]]
@@ -1804,9 +2024,10 @@ if predecir and corredor_activo:
             f"(ratio de fluidez = {res['ratio']:.2f})"
         )
         if res.get("clima"):
+            _fclima_val = safe_get(res.get("factor_clima"), "factor_multiplicador", 1.0)
             _razones.append(
-                f"**Condición climática:** {res['clima'].descripcion} "
-                f"(factor ×{res.get('factor_clima', {}).get('factor_multiplicador', 1.0):.2f})"
+                f"**Condición climática:** {safe_get(res['clima'], 'descripcion', '')} "
+                f"(factor ×{_fclima_val:.2f})"
             )
         if res.get("perturbacion"):
             _razones.append(f"**Perturbación contextual:** factor ×{res.get('perturbacion', 1.0):.2f}")
@@ -1845,14 +2066,32 @@ if predecir and corredor_activo:
     if FOLIUM_OK and origen_activo and destino_activo:
         st.markdown(
             "<div style='font-size:0.85rem;font-weight:600;color:#444;"
-            "margin-bottom:0.4rem;'>🗺️ Ruta en el mapa</div>",
+            "margin-bottom:0.4rem;'>🗺️ Rutas en el mapa</div>",
             unsafe_allow_html=True,
         )
         _m = __import__("folium").Map(
             location=[origen_activo["lat"], origen_activo["lon"]],
             zoom_start=12, tiles="CartoDB positron",
         )
-        if len(corredor_activo["waypoints"]) >= 2:
+        # Dibujar rutas alternativas si hay evaluación multi-ruta
+        if _resultados_rutas:
+            for _rr in _resultados_rutas:
+                if not _rr.waypoints:
+                    continue
+                if _rr.es_recomendada:
+                    _rc, _rw, _ro = VERDE, 6, 0.9
+                elif _rr.ratio_compromiso > 1.8:
+                    _rc, _rw, _ro = COLOR_COMPROMETIDA, 3, 0.55
+                else:
+                    _rc = COLORES_RUTAS.get(_rr.indice, "#4A6FA5")
+                    _rw, _ro = 3, 0.65
+                __import__("folium").PolyLine(
+                    locations=_rr.waypoints,
+                    color=_rc, weight=_rw, opacity=_ro,
+                    tooltip=f"{_rr.nombre}: P50={_rr.p50:.0f} min · IC={_rr.ic:.2f}",
+                ).add_to(_m)
+        elif len(corredor_activo["waypoints"]) >= 2:
+            # Sin alternativas: dibujar ruta única
             __import__("folium").PolyLine(
                 locations=corredor_activo["waypoints"],
                 color=corredor_activo["color_mapa"],
@@ -1872,6 +2111,47 @@ if predecir and corredor_activo:
             ).add_to(_m)
         from streamlit_folium import st_folium as _stf
         _stf(_m, key="mapa_resultados", width="100%", height=320, returned_objects=[])
+        st.divider()
+
+    # ── Panel de comparación multi-ruta ──────────────────────────────────────
+    if _resultados_rutas and len(_resultados_rutas) > 1:
+        st.subheader("🗺️ Comparación de rutas alternativas")
+        _cols_rutas = st.columns(len(_resultados_rutas))
+        for _ci, (_col_r, _rr) in enumerate(zip(_cols_rutas, _resultados_rutas)):
+            with _col_r:
+                _emoji_sem = {"verde": "🟢", "amarillo": "🟡", "rojo": "🔴"}.get(
+                    _rr.semaforo, "⚪"
+                )
+                if _rr.es_recomendada:
+                    st.success(f"⭐ {_rr.nombre}")
+                elif _rr.ratio_compromiso > 1.8:
+                    st.error(f"❌ {_rr.nombre}")
+                else:
+                    st.info(f"➡️ {_rr.nombre}")
+                st.metric("P50", f"{_rr.p50:.0f} min")
+                st.metric("Distancia", f"{_rr.distancia_km:.1f} km")
+                st.metric("IC", f"{_rr.ic:.2f}", delta=_emoji_sem,
+                          delta_color="off")
+                if _rr.ratio_compromiso > 1.8:
+                    st.caption(f"⚠️ {_rr.ratio_compromiso:.1f}× flujo libre")
+
+        _mejor_rr  = _resultados_rutas[0]
+        _princ_rr  = next((r for r in _resultados_rutas if r.indice == 0), _mejor_rr)
+        if _mejor_rr.razon_recomendacion:
+            st.info(_mejor_rr.razon_recomendacion)
+
+        # Mensaje de cambio de ruta para el cliente
+        if _mejor_rr.indice != 0 and MODULOS_EVALUADOR_OK:
+            _expl = generar_explicacion_cambio_ruta(
+                _mejor_rr, _princ_rr,
+                condicion_clima=safe_get(res.get("clima"), "descripcion", ""),
+            )
+            st.text_area(
+                "📱 Mensaje para tu cliente (cambio de ruta recomendado):",
+                value=_expl,
+                height=130,
+                key="msg_cambio_ruta",
+            )
         st.divider()
 
     st.caption(

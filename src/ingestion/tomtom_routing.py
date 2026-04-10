@@ -91,11 +91,17 @@ class RutaVial:
     fuente : str
         ``"tomtom"`` si se obtuvo de la API; ``"haversine_estimada"``
         si se usó el fallback.
+    es_alternativa : bool
+        ``True`` si es una ruta alternativa (no la principal).
+    indice_ruta : int
+        Índice de la ruta en la respuesta TomTom (0 = principal).
     """
     distancia_km:    float
     tiempo_base_min: float
     waypoints:       list[tuple[float, float]] = field(default_factory=list)
     fuente:          str = "tomtom"
+    es_alternativa:  bool = False
+    indice_ruta:     int = 0
 
     def a_dict(self) -> dict[str, Any]:
         return {
@@ -103,6 +109,8 @@ class RutaVial:
             "tiempo_base_min": self.tiempo_base_min,
             "n_waypoints":     len(self.waypoints),
             "fuente":          self.fuente,
+            "es_alternativa":  self.es_alternativa,
+            "indice_ruta":     self.indice_ruta,
         }
 
 
@@ -209,6 +217,39 @@ class TomTomRoutingClient:
             )
             return _fallback_haversine(lat1, lon1, lat2, lon2)
 
+    def calcular_alternativas(
+        self,
+        lat1: float,
+        lon1: float,
+        lat2: float,
+        lon2: float,
+        max_alternativas: int = 2,
+        travel_mode: str = "car",
+    ) -> list[RutaVial]:
+        """
+        Solicita hasta ``max_alternativas + 1`` rutas entre los dos puntos.
+
+        Retorna una lista donde el índice 0 es la ruta principal y los
+        siguientes son alternativas. Si la API falla o no devuelve
+        alternativas, retorna lista con una sola ruta (fallback Haversine).
+
+        Nunca lanza excepción.
+        """
+        try:
+            datos = self._get_con_alternativas(
+                lat1, lon1, lat2, lon2,
+                max_alternativas=max_alternativas,
+                travel_mode=travel_mode,
+            )
+            rutas = self._parsear_multiples_rutas(datos)
+            if rutas:
+                return rutas
+        except Exception as exc:
+            logger.warning(
+                "TomTom Routing alternativas falló (%s); usando fallback.", exc
+            )
+        return [_fallback_haversine(lat1, lon1, lat2, lon2)]
+
     # ------------------------------------------------------------------
     # Métodos privados
     # ------------------------------------------------------------------
@@ -295,6 +336,66 @@ class TomTomRoutingClient:
             waypoints       = waypoints,
             fuente          = "tomtom",
         )
+
+    def _get_con_alternativas(
+        self,
+        lat1: float, lon1: float,
+        lat2: float, lon2: float,
+        max_alternativas: int,
+        travel_mode: str,
+    ) -> dict:
+        """Petición HTTP solicitando rutas alternativas."""
+        url = f"{BASE_URL}/{lat1},{lon1}:{lat2},{lon2}/json"
+        params = {
+            "key":             self._api_key,
+            "maxAlternatives": max_alternativas,
+            "travelMode":      travel_mode,
+            "traffic":         "false",
+            "routeType":       "fastest",
+        }
+        resp = self._session.get(url, params=params, timeout=self._timeout)
+        resp.raise_for_status()
+        return resp.json()
+
+    @staticmethod
+    def _parsear_multiples_rutas(data: dict) -> list[RutaVial]:
+        """Convierte la respuesta JSON multi-ruta en una lista de RutaVial."""
+        routes = data.get("routes", [])
+        if not routes:
+            return []
+
+        resultado: list[RutaVial] = []
+        for i, route in enumerate(routes):
+            summary  = route.get("summary", {})
+            length_m = summary.get("lengthInMeters", 0)
+            travel_s = summary.get("travelTimeInSeconds", 0)
+            if length_m <= 0:
+                continue
+
+            puntos_raw: list[dict] = []
+            for leg in route.get("legs", []):
+                puntos_raw.extend(leg.get("points", []))
+
+            waypoints = _submuestrear(
+                [(p["latitude"], p["longitude"]) for p in puntos_raw],
+                max_puntos=MAX_WAYPOINTS_GEOMETRIA,
+            )
+
+            resultado.append(RutaVial(
+                distancia_km    = round(length_m / 1000, 2),
+                tiempo_base_min = round(travel_s / 60, 1),
+                waypoints       = waypoints,
+                fuente          = "tomtom",
+                es_alternativa  = (i > 0),
+                indice_ruta     = i,
+            ))
+            logger.debug(
+                "Ruta %d TomTom: %.2f km · %.1f min · %d puntos",
+                i, resultado[-1].distancia_km,
+                resultado[-1].tiempo_base_min, len(waypoints),
+            )
+
+        return resultado
 
 
 # ──────────────────────────────────────────────────────────────────────

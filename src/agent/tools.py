@@ -45,6 +45,7 @@ from src.ingestion.tomtom_client import TomTomAPIError, TomTomTrafficClient
 from src.models.schemas import PrediccionViaje, RespuestaTomTom
 from src.simulation.markov_chain import MarkovTrafficChain
 from src.simulation.monte_carlo import ConsultaViaje, MonteCarloEngine
+from src.simulation.evaluador_rutas import evaluar_rutas, generar_explicacion_cambio_ruta
 
 logger = logging.getLogger(__name__)
 
@@ -929,3 +930,120 @@ def detectar_eventos_activos(
             "resumen": "No se pudieron consultar fuentes de eventos.",
             "n_eventos": 0,
         }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Herramienta 5 — seleccionar_mejor_ruta
+# ═══════════════════════════════════════════════════════════════════════════
+
+@function_tool
+def seleccionar_mejor_ruta(
+    origen_lat: float,
+    origen_lon: float,
+    destino_lat: float,
+    destino_lon: float,
+    hora: str = "08:00",
+    dia: str = "lunes",
+    tipo_vehiculo: str = "car",
+) -> dict:
+    """
+    Evalúa múltiples rutas alternativas entre origen y destino, corre Monte
+    Carlo sobre cada una y recomienda la óptima basándose en P50 e IC.
+
+    Úsala cuando el usuario pregunte por la mejor ruta, cuando detectes que
+    el tráfico está muy comprometido, o cuando pida comparar alternativas.
+    Si TomTom Routing no está disponible, evalúa la ruta Haversine como
+    única opción y devuelve sus percentiles.
+
+    Parámetros
+    ----------
+    origen_lat, origen_lon : float
+        Coordenadas WGS84 del origen.
+    destino_lat, destino_lon : float
+        Coordenadas WGS84 del destino.
+    hora : str
+        Hora de salida en formato "HH:MM" (24 h). Default: "08:00".
+    dia : str
+        Día de la semana en español o inglés. Default: "lunes".
+    tipo_vehiculo : str
+        "car" o "motorcycle". Default: "car".
+
+    Devuelve
+    --------
+    dict
+        ruta_recomendada, alternativas, cambio_ruta, explicacion,
+        n_rutas_evaluadas.
+    """
+    try:
+        # ── 1. Obtener rutas alternativas ────────────────────────────────────
+        rutas_viales: list = []
+        tomtom_key = os.getenv("TOMTOM_API_KEY", "")
+        if tomtom_key:
+            try:
+                from src.ingestion.tomtom_routing import TomTomRoutingClient
+                _rout = TomTomRoutingClient(api_key=tomtom_key)
+                rutas_viales = _rout.calcular_alternativas(
+                    origen_lat, origen_lon,
+                    destino_lat, destino_lon,
+                    max_alternativas=2,
+                    travel_mode=tipo_vehiculo,
+                )
+            except Exception as exc:
+                logger.warning("TomTom Routing no disponible en herramienta: %s", exc)
+
+        if not rutas_viales:
+            # Fallback: ruta Haversine única
+            from src.ingestion.tomtom_routing import _fallback_haversine
+            rutas_viales = [_fallback_haversine(
+                origen_lat, origen_lon, destino_lat, destino_lon
+            )]
+
+        # ── 2. Preparar motor Monte Carlo ────────────────────────────────────
+        estado_inicial = _estado_desde_hora_dia(hora, dia)
+        motor = _get_default_engine()
+
+        # ── 3. Evaluar cada ruta ─────────────────────────────────────────────
+        resultados = evaluar_rutas(
+            rutas_viales   = rutas_viales,
+            motor_mc       = motor,
+            cadena_markov  = None,   # ya embebido en el motor
+            estado_inicial = estado_inicial,
+        )
+
+        if not resultados:
+            return {"error": "No se pudieron evaluar las rutas."}
+
+        mejor     = resultados[0]
+        principal = next((r for r in resultados if r.indice == 0), mejor)
+        explicacion = generar_explicacion_cambio_ruta(mejor, principal)
+
+        return {
+            "ruta_recomendada": {
+                "nombre":       mejor.nombre,
+                "distancia_km": round(mejor.distancia_km, 1),
+                "p10":          round(mejor.p10, 0),
+                "p50":          round(mejor.p50, 0),
+                "p90":          round(mejor.p90, 0),
+                "ic":           round(mejor.ic, 2),
+                "semaforo":     mejor.semaforo,
+            },
+            "alternativas": [
+                {
+                    "nombre":            r.nombre,
+                    "distancia_km":      round(r.distancia_km, 1),
+                    "p50":               round(r.p50, 0),
+                    "ic":                round(r.ic, 2),
+                    "semaforo":          r.semaforo,
+                    "ratio_compromiso":  round(r.ratio_compromiso, 2),
+                    "es_recomendada":    r.es_recomendada,
+                }
+                for r in resultados
+            ],
+            "cambio_ruta":         mejor.indice != 0,
+            "explicacion":         explicacion,
+            "n_rutas_evaluadas":   len(resultados),
+        }
+
+    except Exception as exc:
+        logger.warning("Error en selección de mejor ruta: %s", exc)
+        return {"error": str(exc)}
