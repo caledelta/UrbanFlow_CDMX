@@ -41,6 +41,7 @@ from dotenv import load_dotenv
 from src.agent.prompts import SYSTEM_PROMPT
 from src.agent.tools import (
     consultar_trafico_ahora,
+    detectar_eventos_activos,
     get_tools_schema,
     predecir_tiempo_viaje,
     verificar_perturbaciones,
@@ -66,9 +67,10 @@ MAX_ITERACIONES: int = 10  # Límite del loop para evitar bucles infinitos
 
 # Tabla de despacho: nombre de herramienta → función Python
 _DISPATCH: dict[str, Any] = {
-    "predecir_tiempo_viaje":   predecir_tiempo_viaje,
-    "consultar_trafico_ahora": consultar_trafico_ahora,
+    "predecir_tiempo_viaje":    predecir_tiempo_viaje,
+    "consultar_trafico_ahora":  consultar_trafico_ahora,
     "verificar_perturbaciones": verificar_perturbaciones,
+    "detectar_eventos_activos": detectar_eventos_activos,
 }
 
 

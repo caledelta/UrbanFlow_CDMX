@@ -39,6 +39,8 @@ from typing import Any, Callable
 
 import numpy as np
 
+from src.data_sources.eventos_client import EventosClient
+from src.agent.eventos_dinamicos import agregar_factores, resumir_eventos
 from src.ingestion.tomtom_client import TomTomAPIError, TomTomTrafficClient
 from src.models.schemas import PrediccionViaje, RespuestaTomTom
 from src.simulation.markov_chain import MarkovTrafficChain
@@ -853,3 +855,77 @@ def _parsear_fecha(fecha: str) -> datetime.datetime:
         f"Formato de fecha no reconocido: '{fecha}'. "
         f"Use 'YYYY-MM-DDTHH:MM:SS' o 'YYYY-MM-DD HH:MM'."
     )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Herramienta 4 — detectar_eventos_activos
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Cliente con caché de 5 min; se instancia una vez por proceso
+_eventos_client = EventosClient(timeout=5, cache_ttl_min=5)
+
+
+@function_tool
+def detectar_eventos_activos(
+    latitud: float = 19.4326,
+    longitud: float = -99.1332,
+    radio_km: float = 15.0,
+) -> dict:
+    """
+    Detecta eventos activos en cuasi-tiempo-real en la ZMVM.
+
+    Consulta el C5 CDMX y otras fuentes públicas para identificar
+    incidentes, manifestaciones, cierres viales o eventos climáticos
+    que puedan afectar el tráfico en la zona especificada. Úsala cuando
+    el usuario pregunte si hay eventos activos, incidentes o situaciones
+    que afecten el tráfico en este momento en la ZMVM.
+
+    Parámetros
+    ----------
+    latitud : float
+        Latitud del punto de interés (default: centro CDMX).
+    longitud : float
+        Longitud del punto de interés.
+    radio_km : float
+        Radio de búsqueda en kilómetros.
+
+    Devuelve
+    --------
+    dict
+        Resultado con claves: eventos (lista), factor_dinamico (float),
+        resumen (str) y n_eventos (int).
+    """
+    try:
+        eventos = _eventos_client.obtener_eventos_activos(
+            lat_centro=latitud,
+            lon_centro=longitud,
+            radio_km=radio_km,
+            horas_atras=6,
+        )
+        factor = agregar_factores(eventos)
+        resumen = resumir_eventos(eventos)
+
+        return {
+            "eventos": [
+                {
+                    "tipo": e.tipo,
+                    "descripcion": e.descripcion,
+                    "alcaldia": e.alcaldia,
+                    "severidad": e.severidad,
+                    "radio_km": e.radio_impacto_km,
+                }
+                for e in eventos[:10]
+            ],
+            "factor_dinamico": round(factor, 4),
+            "resumen": resumen if resumen else "Sin eventos activos detectados.",
+            "n_eventos": len(eventos),
+        }
+
+    except Exception as exc:
+        logger.warning("Error en detección de eventos: %s", exc)
+        return {
+            "eventos": [],
+            "factor_dinamico": 1.0,
+            "resumen": "No se pudieron consultar fuentes de eventos.",
+            "n_eventos": 0,
+        }
