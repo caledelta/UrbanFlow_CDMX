@@ -21,10 +21,12 @@ si no, usa el modo DEMO con datos precalibrados.
 from __future__ import annotations
 
 import base64
+import datetime
 import math
 import os
 import shutil
 import sys
+from copy import deepcopy
 from pathlib import Path
 
 # ── Raíz del proyecto en sys.path ───────────────────────────────────────────
@@ -690,6 +692,33 @@ hr {{ border-color: rgba(29,158,117,0.25) !important; }}
     color: {VERDE};
     font-size: 0.95rem;
 }}
+
+/* ── Sidebar: botones secundarios (gris, hover rojo) ────────────────────── */
+section[data-testid="stSidebar"] button[kind="secondary"],
+section[data-testid="stSidebar"] [data-testid="stBaseButton-secondary"] {{
+    background: rgba(255,255,255,0.08) !important;
+    color: #C8D8E8 !important;
+    border: 1px solid rgba(255,255,255,0.20) !important;
+    border-radius: 8px !important;
+}}
+section[data-testid="stSidebar"] button[kind="secondary"]:hover,
+section[data-testid="stSidebar"] [data-testid="stBaseButton-secondary"]:hover {{
+    background: rgba(208,2,27,0.18) !important;
+    border-color: {ROJO} !important;
+    color: #FFFFFF !important;
+}}
+
+/* ── Sidebar: cabecera de expander (texto azul, fondo azul tenue) ─────── */
+section[data-testid="stSidebar"] [data-testid="stExpander"] summary {{
+    background: rgba(29,158,117,0.10) !important;
+    border-radius: 8px !important;
+    color: {VERDE} !important;
+}}
+section[data-testid="stSidebar"] [data-testid="stExpander"] summary p,
+section[data-testid="stSidebar"] [data-testid="stExpander"] summary span {{
+    color: {VERDE} !important;
+    font-weight: 600 !important;
+}}
 </style>
 """
 
@@ -916,23 +945,49 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    # ── Día de la semana ─────────────────────────────────────────────────────
+    # ── Fecha de viaje ────────────────────────────────────────────────────────
     st.markdown(
         "<div style='font-size:0.78rem;color:#A8C4D8;text-transform:uppercase;"
         "letter-spacing:.06em;font-weight:600;margin-top:10px;margin-bottom:4px;'>"
-        "📅 Día de la semana</div>",
+        "📅 Fecha de viaje</div>",
         unsafe_allow_html=True,
     )
-    dia_nombre = st.selectbox(
-        label="Día", options=DIAS_SEMANA, index=0,
+    _fecha_sel = st.date_input(
+        label="Fecha",
+        value=datetime.date.today(),
+        min_value=datetime.date.today(),
+        max_value=datetime.date.today() + datetime.timedelta(days=30),
         label_visibility="collapsed",
+        format="DD/MM/YYYY",
     )
+    # Derivar día de la semana en español a partir de la fecha
+    _DIA_ISO_A_NOMBRE = {
+        0: "Lunes", 1: "Martes", 2: "Miércoles", 3: "Jueves",
+        4: "Viernes", 5: "Sábado", 6: "Domingo",
+    }
+    dia_nombre = _DIA_ISO_A_NOMBRE[_fecha_sel.weekday()]
     dia_idx = DIAS_SEMANA.index(dia_nombre)
+    st.markdown(
+        f"<div style='font-size:0.78rem;color:#7EC8A4;margin-top:3px;'>"
+        f"📌 {dia_nombre}</div>",
+        unsafe_allow_html=True,
+    )
 
     st.markdown(
         "<hr style='border-color:rgba(255,255,255,0.15);margin:0.6rem 0;'>",
         unsafe_allow_html=True,
     )
+
+    # ── Botón principal ──────────────────────────────────────────────────────
+    boton_deshabilitado = not (origen_activo and destino_activo)
+    predecir = st.button(
+        "🚀 Predecir trayecto",
+        type="primary",
+        use_container_width=True,
+        disabled=boton_deshabilitado,
+    )
+    if boton_deshabilitado:
+        st.caption("⚠ Define origen y destino para habilitar")
 
     # ── Configuración avanzada ───────────────────────────────────────────────
     with st.expander("⚙️ Configuración avanzada"):
@@ -947,16 +1002,19 @@ with st.sidebar:
             help="Requiere TOMTOM_API_KEY y OPENWEATHERMAP_API_KEY en .env",
         )
 
-    # ── Botón principal ──────────────────────────────────────────────────────
-    boton_deshabilitado = not (origen_activo and destino_activo)
-    predecir = st.button(
-        "🚀 Predecir trayecto",
-        type="primary",
-        use_container_width=True,
-        disabled=boton_deshabilitado,
+    # ── Tipo de vehículo ─────────────────────────────────────────────────────
+    st.markdown(
+        "<div style='font-size:0.78rem;color:#A8C4D8;text-transform:uppercase;"
+        "letter-spacing:.06em;font-weight:600;margin-top:10px;margin-bottom:4px;'>"
+        "🚗 Tipo de vehículo</div>",
+        unsafe_allow_html=True,
     )
-    if boton_deshabilitado:
-        st.caption("⚠ Define origen y destino para habilitar")
+    tipo_vehiculo = st.radio(
+        "Tipo de vehículo",
+        options=["🚗 Automóvil", "🏍️ Motocicleta"],
+        horizontal=True,
+        label_visibility="collapsed",
+    )
 
     # ── Chat VialAI ──────────────────────────────────────────────────────────
     st.markdown(
@@ -1048,7 +1106,22 @@ def obtener_cadena() -> "MarkovTrafficChain | None":
     return _crear_cadena_calibrada()
 
 
-def simular_modo_demo(corredor: dict, hora: int, dia_idx: int, n_simulaciones: int) -> dict:
+def ajustar_velocidad_por_vehiculo(params: dict, tipo: str) -> dict:
+    """Aplica un factor multiplicador a los parámetros de velocidad según el tipo de vehículo."""
+    ajustado = deepcopy(params)
+    if "Motocicleta" in tipo:
+        # Las motos navegan ~15 % más rápido en tráfico denso
+        for estado in ajustado:
+            ajustado[estado]["media"] = round(ajustado[estado]["media"] * 1.15, 2)
+            ajustado[estado]["min"]   = round(ajustado[estado]["min"]   * 1.10, 2)
+            ajustado[estado]["max"]   = round(ajustado[estado]["max"]   * 1.12, 2)
+    return ajustado
+
+
+def simular_modo_demo(
+    corredor: dict, hora: int, dia_idx: int, n_simulaciones: int,
+    tipo_vehiculo: str = "🚗 Automóvil",
+) -> dict:
     cadena = obtener_cadena()
     if cadena is None or not MODULOS_SIMULACION_OK:
         return _resultado_fallback(corredor, hora, dia_idx)
@@ -1064,6 +1137,7 @@ def simular_modo_demo(corredor: dict, hora: int, dia_idx: int, n_simulaciones: i
         }
         for k, v in VELOCIDAD_PARAMS.items()
     }
+    params_ajust = ajustar_velocidad_por_vehiculo(params_ajust, tipo_vehiculo)
     try:
         motor    = MonteCarloEngine(cadena, n_simulaciones=n_simulaciones,
                                     velocidad_params=params_ajust,
@@ -1393,6 +1467,22 @@ def render_mapa_od(
 # ÁREA PRINCIPAL
 # ════════════════════════════════════════════════════════════════════════════
 
+# ── Mejora 2: cabecera con reloj y fecha ─────────────────────────────────────
+_col_titulo, _col_reloj = st.columns([4, 1])
+with _col_titulo:
+    st.markdown("### 🗺️ Mapa interactivo — ZMVM")
+with _col_reloj:
+    _ahora = datetime.datetime.now()
+    st.markdown(
+        f"<div style='text-align:right;padding-top:6px;'>"
+        f"<div style='font-size:1.4rem;font-weight:800;color:#F0F4F8;"
+        f"line-height:1.1;'>{_ahora.strftime('%H:%M')}</div>"
+        f"<div style='font-size:0.72rem;color:#8BA7BE;'>"
+        f"{_ahora.strftime('%d/%m/%Y')}</div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
 col_info, col_mapa = st.columns([1, 2], gap="large")
 
 with col_info:
@@ -1562,11 +1652,14 @@ with col_mapa:
 
 if predecir and corredor_activo:
 
-    with st.spinner("Ejecutando simulación Monte Carlo..."):
+    with st.spinner("🔄 Calculando ruta y simulando 10,000 trayectorias..."):
         if usar_api and MODULOS_PIPELINE_OK:
             res = simular_modo_api(corredor_activo, hora_salida, dia_idx, n_sims)
         else:
-            res = simular_modo_demo(corredor_activo, hora_salida, dia_idx, n_sims)
+            res = simular_modo_demo(
+                corredor_activo, hora_salida, dia_idx, n_sims,
+                tipo_vehiculo=tipo_vehiculo,
+            )
 
     _NOMBRES_ESTADO = {0: "Fluido", 1: "Lento", 2: "Congestionado"}
     estado_nombre   = _NOMBRES_ESTADO[res["estado_inicial"]]
@@ -1646,6 +1739,31 @@ if predecir and corredor_activo:
                                   dcolor="#999"),
                     unsafe_allow_html=True)
 
+    # ── Mejora 4: detección de compromiso de ruta ────────────────────────────
+    VELOCIDAD_FLUJO_LIBRE = 35.0  # km/h referencia libre de tráfico
+    _tiempo_fluido_min = corredor_activo["distancia_km"] / VELOCIDAD_FLUJO_LIBRE * 60
+    _ratio_compromiso  = res["p50"] / _tiempo_fluido_min if _tiempo_fluido_min > 0 else 1.0
+    if _ratio_compromiso >= 1.8:
+        _gmaps_url = (
+            f"https://www.google.com/maps/dir/{origen_activo['lat']},{origen_activo['lon']}/"
+            f"{destino_activo['lat']},{destino_activo['lon']}"
+        )
+        st.warning(
+            f"⚠️ **Trayecto muy comprometido** — El tiempo estimado (P50 = {res['p50']:.0f} min) "
+            f"es **{_ratio_compromiso:.1f}×** el tiempo en vía libre ({_tiempo_fluido_min:.0f} min). "
+            f"Considera rutas alternativas. [Ver en Google Maps]({_gmaps_url})"
+        )
+    elif _ratio_compromiso >= 1.4:
+        st.info(
+            f"ℹ️ **Tráfico moderado** — El tiempo estimado es **{_ratio_compromiso:.1f}×** "
+            f"el tiempo en vía libre ({_tiempo_fluido_min:.0f} min)."
+        )
+    else:
+        st.success(
+            f"✅ **Condiciones favorables** — El trayecto fluye cerca de la velocidad libre "
+            f"({_ratio_compromiso:.1f}× vs referencia de {_tiempo_fluido_min:.0f} min)."
+        )
+
     st.divider()
 
     _, col_g, _ = st.columns([1, 3, 1])
@@ -1674,6 +1792,53 @@ if predecir and corredor_activo:
         render_histograma(res["tiempos"], res["p10"], res["p50"], res["p90"]),
         use_container_width=True, config={"displayModeBar": False},
     )
+
+    st.divider()
+
+    # ── Mejora 5: Diagnóstico del tráfico ────────────────────────────────────
+    with st.expander("📋 Diagnóstico del tráfico", expanded=False):
+        _hora_pico = 7 <= int(hora_salida) <= 9 or 17 <= int(hora_salida) <= 20
+        _razones: list[str] = []
+        _razones.append(
+            f"**Estado de tráfico inicial:** {estado_nombre} "
+            f"(ratio de fluidez = {res['ratio']:.2f})"
+        )
+        if res.get("clima"):
+            _razones.append(
+                f"**Condición climática:** {res['clima'].descripcion} "
+                f"(factor ×{res.get('factor_clima', {}).get('factor_multiplicador', 1.0):.2f})"
+            )
+        if res.get("perturbacion"):
+            _razones.append(f"**Perturbación contextual:** factor ×{res.get('perturbacion', 1.0):.2f}")
+        if _hora_pico:
+            _razones.append(
+                f"**Hora punta detectada** ({int(hora_salida):02d}:00 h) — "
+                f"mayor probabilidad de congestión"
+            )
+        _razones.append(f"**Vehículo:** {tipo_vehiculo}")
+        _razones.append(
+            f"**Banda de incertidumbre P10–P90:** "
+            f"{res['p10']:.0f} – {res['p90']:.0f} min "
+            f"(amplitud {res['p90'] - res['p10']:.0f} min)"
+        )
+        for _r in _razones:
+            st.markdown(f"- {_r}")
+
+        st.markdown("---")
+        _msg_cliente = (
+            f"Hola, consulté tu trayecto {origen_activo['nombre']} → {destino_activo['nombre']} "
+            f"para el {dia_nombre} a las {int(hora_salida):02d}:{(_minutos):02d} h.\n"
+            f"Tiempo estimado (mediana): {res['p50']:.0f} min. "
+            f"Rango probable: {res['p10']:.0f} – {res['p90']:.0f} min.\n"
+            f"Estado del tráfico: {estado_nombre}. Vehículo: {tipo_vehiculo}.\n"
+            f"Predicción generada por VialAI · UrbanFlow CDMX."
+        )
+        st.text_area(
+            "💬 Mensaje listo para compartir",
+            value=_msg_cliente,
+            height=130,
+            key="msg_cliente_diagnostico",
+        )
 
     st.divider()
 
