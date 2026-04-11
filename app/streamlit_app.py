@@ -1229,7 +1229,11 @@ with st.sidebar:
         with _col_v1:
             send_voice = st.button("🚀 Enviar voz", use_container_width=True)
         with _col_v2:
-            tts_enabled = st.toggle("🔊 Respuesta hablada", value=True)
+            tts_enabled = st.toggle(
+                "🔊 Respuesta hablada",
+                value=False,
+                help="Actívalo si vas manejando. Consume API de OpenAI TTS."
+            )
     else:
         audio_value = None
         send_voice = False
