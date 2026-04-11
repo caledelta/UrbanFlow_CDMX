@@ -106,7 +106,13 @@ except ImportError:
     VIALAI_OK = False
 
 try:
-    from src.agent.voice_io import transcribir_audio, sintetizar_voz
+    from src.agent.voice_io import (
+        transcribir_audio,
+        sintetizar_voz,
+        resumen_para_voz,
+        limpiar_para_tts,
+        VoiceError,
+    )
     VOICE_IO_OK = True
 except ImportError:
     VOICE_IO_OK = False
@@ -904,6 +910,18 @@ section[data-testid="stSidebar"] {
         display: none !important;
     }
 }
+/* Widget de audio: ocultar error residual */
+[data-testid="stAudioInput"] [class*="stAlert"],
+[data-testid="stAudioInput"] [aria-label*="error" i] {
+    display: none !important;
+}
+/* Contador de tiempo en verde — solo elementos específicos, sin * */
+[data-testid="stAudioInput"] time,
+[data-testid="stAudioInput"] [role="timer"],
+[data-testid="stAudioInput"] input[type="text"][readonly] {
+    color: #22c55e !important;
+    font-weight: 600 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -1238,6 +1256,16 @@ with st.sidebar:
                     _fmt = "audio/wav" if _msg["audio"][:4] == b"RIFF" else "audio/mp3"
                     st.audio(_msg["audio"], format=_fmt, autoplay=True)
 
+    # Auto-scroll al último mensaje del asistente
+    st.markdown("""
+<script>
+setTimeout(function() {
+    var msgs = window.parent.document.querySelectorAll('[data-testid="stChatMessage"]');
+    if (msgs.length > 0) msgs[msgs.length - 1].scrollIntoView({behavior:'smooth', block:'start'});
+}, 300);
+</script>
+""", unsafe_allow_html=True)
+
     # ── Entrada por voz ──────────────────────────────────────────────────────
     if VOICE_IO_OK:
         st.markdown("### 🎤 VialAI — Comando por voz")
@@ -1248,7 +1276,7 @@ with st.sidebar:
         )
         _col_v1, _col_v2 = st.columns(2)
         with _col_v1:
-            send_voice = st.button("🚀 Enviar voz", use_container_width=True)
+            send_voice = st.button("🚀 Enviar consulta", use_container_width=True)
         with _col_v2:
             tts_enabled = st.toggle(
                 "🔊 Respuesta hablada",
@@ -1276,7 +1304,6 @@ with st.sidebar:
                 else:
                     st.sidebar.warning("No entendí el audio. Intenta de nuevo.")
             except Exception as _ve:
-                from src.agent.voice_io import VoiceError
                 if isinstance(_ve, VoiceError):
                     st.sidebar.error(f"🎤 {_ve.user_msg}")
                 else:
@@ -1311,7 +1338,8 @@ with st.sidebar:
         _audio_respuesta = None
         if tts_enabled and _prompt_voz and VOICE_IO_OK:
             with st.spinner("🔊 Generando respuesta hablada..."):
-                _audio_respuesta = sintetizar_voz(_respuesta)
+                _texto_hablable = resumen_para_voz(_respuesta)
+                _audio_respuesta = sintetizar_voz(_texto_hablable)
 
         st.session_state.chat_historial.append(
             {"role": "assistant", "content": _respuesta, "audio": _audio_respuesta}
@@ -2319,6 +2347,18 @@ elif not (origen_activo and destino_activo):
         "Luego pulsa **🚀 Predecir trayecto**.",
         icon="🗺️",
     )
+    st.markdown("""
+---
+#### 💡 Ejemplos de consulta
+
+**Por voz** 🎤 (recomendado al volante):
+> *"Llévame de la estación del Metro Cuatro Caminos al Aeropuerto Internacional de la Ciudad de México hoy a las 6 de la mañana."*
+
+**Por texto** ⌨️:
+> *"¿Cuánto tardo de Polanco a Santa Fe a las 7 PM viernes?"*
+
+VialAI interpreta lenguaje natural: origen, destino, fecha y hora en la misma frase. Si omites la hora, se asume la actual.
+""")
 
 
 # ════════════════════════════════════════════════════════════════════════════
