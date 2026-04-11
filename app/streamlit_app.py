@@ -896,8 +896,11 @@ st.markdown("""
     transform: translateX(0) !important;
     visibility: visible !important;
 }
-[data-testid="collapsedControl"] {
-    display: none !important;
+/* Ocultar botón colapsar en escritorio; visible en pantallas pequeñas */
+@media (min-width: 992px) {
+    [data-testid="collapsedControl"] {
+        display: none !important;
+    }
 }
 /* Ocultar mensaje de error residual del widget st.audio_input */
 [data-testid="stAudioInput"] [class*="error"],
