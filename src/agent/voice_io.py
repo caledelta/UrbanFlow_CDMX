@@ -156,3 +156,84 @@ def _tts_local(texto: str) -> bytes | None:
     except Exception as e:
         logger.warning("TTS local falló (%s). Continuando sin audio.", e)
         return None
+
+
+# ── Síntesis limpia para TTS ─────────────────────────────────────────────────
+
+import re
+
+
+def limpiar_para_tts(texto: str) -> str:
+    """
+    Limpia markdown y símbolos que TTS leería literalmente ("asterisco").
+    Deja solo palabras y puntuación natural que el sintetizador entona bien.
+    """
+    if not texto:
+        return ""
+    t = texto
+    # Quitar bloques de código y backticks
+    t = re.sub(r"```[\s\S]*?```", " ", t)
+    t = re.sub(r"`([^`]*)`", r"\1", t)
+    # Quitar headers markdown (# ## ###)
+    t = re.sub(r"^#{1,6}\s*", "", t, flags=re.MULTILINE)
+    # Quitar negritas/cursivas **texto**, __texto__, *texto*, _texto_
+    t = re.sub(r"\*\*\*([^\*]+)\*\*\*", r"\1", t)
+    t = re.sub(r"\*\*([^\*]+)\*\*", r"\1", t)
+    t = re.sub(r"\*([^\*]+)\*", r"\1", t)
+    t = re.sub(r"__([^_]+)__", r"\1", t)
+    t = re.sub(r"(?<!\w)_([^_]+)_(?!\w)", r"\1", t)
+    # Quitar enlaces [texto](url) → texto
+    t = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", t)
+    # Quitar viñetas y guiones de lista
+    t = re.sub(r"^\s*[-•*]\s+", "", t, flags=re.MULTILINE)
+    t = re.sub(r"^\s*\d+\.\s+", "", t, flags=re.MULTILINE)
+    # Símbolos residuales molestos
+    t = t.replace("→", " a ").replace("·", ",").replace("—", ",").replace("–", ",")
+    t = t.replace("#", "").replace("*", "").replace("~", "").replace("|", "")
+    # Colapsar espacios y saltos múltiples
+    t = re.sub(r"\n{2,}", ". ", t)
+    t = re.sub(r"\n", " ", t)
+    t = re.sub(r"\s{2,}", " ", t)
+    # Asegurar punto final para entonación natural
+    t = t.strip()
+    if t and t[-1] not in ".!?":
+        t += "."
+    return t
+
+
+def resumen_para_voz(respuesta_completa: str) -> str:
+    """
+    Genera un resumen hablable de ~25 palabras con lo esencial:
+    distancia, P50, incertidumbre, y perturbaciones relevantes.
+    Usa Claude Haiku por velocidad y costo.
+    """
+    if not respuesta_completa:
+        return ""
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        prompt = (
+            "Eres un copiloto de voz para conductores en CDMX. "
+            "Resume la siguiente respuesta en UNA sola oración natural "
+            "de máximo 30 palabras, en español neutro, sin markdown, sin "
+            "símbolos, sin listas, sin números entre paréntesis. Incluye "
+            "SOLO: distancia en kilómetros, tiempo estimado P50 en "
+            "minutos, y si hay alguna perturbación o evento relevante. "
+            "No saludes, no despidas, no digas 'tu ruta' — ve directo al "
+            "dato. Ejemplo del tono esperado: 'Son 12 kilómetros, "
+            "tardarás unos 26 minutos, hay tráfico ligero en Periférico.'"
+            "\n\nRespuesta a resumir:\n" + respuesta_completa[:2000]
+        )
+        msg = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=120,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        texto = msg.content[0].text if msg.content else ""
+        return limpiar_para_tts(texto)
+    except Exception as e:
+        logger.warning("Resumen para voz falló (%s). Usando limpieza simple.", e)
+        # Fallback: limpiar el original y tomar las primeras 2 oraciones
+        limpio = limpiar_para_tts(respuesta_completa)
+        oraciones = re.split(r"(?<=[.!?])\s+", limpio)
+        return " ".join(oraciones[:2])[:400]

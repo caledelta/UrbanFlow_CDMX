@@ -2,7 +2,7 @@ import os
 import pytest
 from unittest.mock import patch, MagicMock
 from src.agent import voice_io
-from src.agent.voice_io import VoiceError, transcribir_audio, sintetizar_voz
+from src.agent.voice_io import VoiceError, transcribir_audio, sintetizar_voz, limpiar_para_tts
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -89,3 +89,31 @@ def test_quota_error_lanza_voice_error():
         with pytest.raises(VoiceError) as exc_info:
             transcribir_audio(b"xxx")
     assert "créditos" in exc_info.value.user_msg.lower()
+
+
+# ── limpiar_para_tts ──────────────────────────────────────────────────────────
+
+def test_limpiar_quita_markdown_basico():
+    t = "**Ruta:** Polanco → AICM\n\n- 12 km\n- 26 min"
+    out = limpiar_para_tts(t)
+    assert "**" not in out
+    assert "*" not in out
+    assert "→" not in out
+    assert " a " in out  # el → se convierte en "a"
+    assert "12 km" in out
+    assert "26 min" in out
+
+def test_limpiar_quita_headers_y_backticks():
+    t = "## Resultados\n`P50=26` minutos"
+    out = limpiar_para_tts(t)
+    assert "#" not in out
+    assert "`" not in out
+    assert "P50=26" in out
+
+def test_limpiar_cadena_vacia():
+    assert limpiar_para_tts("") == ""
+    assert limpiar_para_tts(None) == ""
+
+def test_limpiar_asegura_punto_final():
+    assert limpiar_para_tts("Hola mundo").endswith(".")
+    assert limpiar_para_tts("¿Cuánto tardo?").endswith("?")
