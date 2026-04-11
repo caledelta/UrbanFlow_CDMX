@@ -1,7 +1,7 @@
 """
 src/agent/tools.py — Herramientas del agente conversacional UrbanFlow CDMX.
 
-Fase 2 de Function Calling: define las tres herramientas que el agente usa
+Fase 2 de Function Calling: define las herramientas que el agente usa
 para responder consultas de movilidad urbana en la ZMVM. Cada herramienta
 está decorada con @function_tool, que genera el schema JSON requerido por
 la Anthropic API (campo ``tools`` en ``client.messages.create``).
@@ -11,6 +11,7 @@ Herramientas registradas
 predecir_tiempo_viaje    — simulación Monte Carlo P10/P50/P90 para un trayecto.
 consultar_trafico_ahora  — velocidad y congestión en tiempo real (TomTom API).
 verificar_perturbaciones — perturbaciones contextuales activas (§5B CLAUDE.md).
+usar_ruta_personalizada  — carga un lugar guardado por el usuario como punto O/D.
 
 Fallbacks
 ---------
@@ -46,6 +47,7 @@ from src.models.schemas import PrediccionViaje, RespuestaTomTom
 from src.simulation.markov_chain import MarkovTrafficChain
 from src.simulation.monte_carlo import ConsultaViaje, MonteCarloEngine
 from src.simulation.evaluador_rutas import evaluar_rutas, generar_explicacion_cambio_ruta
+from src.core.rutas_personalizadas import cargar_ruta
 
 logger = logging.getLogger(__name__)
 
@@ -1047,3 +1049,55 @@ def seleccionar_mejor_ruta(
     except Exception as exc:
         logger.warning("Error en selección de mejor ruta: %s", exc)
         return {"error": str(exc)}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Herramienta 5 — Usar ruta personalizada del usuario
+# ═══════════════════════════════════════════════════════════════════════════
+
+@function_tool
+def usar_ruta_personalizada(nombre: str, store_json: str) -> dict:
+    """
+    Carga un lugar guardado por el usuario (origen o destino) a partir de su nombre.
+
+    Busca en la lista de lugares personalizados del usuario y devuelve las
+    coordenadas del punto. El agente puede usarlo para pre-cargar un origen
+    o destino cuando el usuario menciona "mi casa", "el trabajo", etc.
+
+    Parámetros
+    ----------
+    nombre : str
+        Nombre del lugar guardado (e.g. "Casa", "Trabajo"). Búsqueda
+        case-insensitive.
+    store_json : str
+        Lista de puntos guardados serializada como JSON.
+        Formato: '[{"lat": 19.43, "lon": -99.13, "nombre": "Casa"}, ...]'
+
+    Devuelve
+    --------
+    dict
+        {'encontrado': True, 'lat': float, 'lon': float, 'nombre': str}
+        o {'encontrado': False, 'mensaje': str} si no existe.
+    """
+    import json as _json
+    try:
+        store: list = _json.loads(store_json) if store_json else []
+    except (ValueError, TypeError):
+        store = []
+
+    punto = cargar_ruta(nombre, store)
+    if punto is None:
+        nombres_disp = [p["nombre"] for p in store]
+        return {
+            "encontrado": False,
+            "mensaje": (
+                f"No se encontró '{nombre}' en tus lugares guardados. "
+                f"Disponibles: {nombres_disp or 'ninguno'}."
+            ),
+        }
+    return {
+        "encontrado": True,
+        "lat":    punto["lat"],
+        "lon":    punto["lon"],
+        "nombre": punto["nombre"],
+    }

@@ -117,6 +117,17 @@ try:
 except ImportError:
     VOICE_IO_OK = False
 
+try:
+    from src.core.rutas_personalizadas import (
+        agregar_ruta,
+        listar_rutas,
+        eliminar_ruta,
+        cargar_ruta,
+    )
+    RUTAS_PERSONALIZADAS_OK = True
+except ImportError:
+    RUTAS_PERSONALIZADAS_OK = False
+
 
 # ════════════════════════════════════════════════════════════════════════════
 # UTILIDADES GENERALES
@@ -971,6 +982,7 @@ _DEFAULTS: dict = {
     "capa_mapa": "estandar",
     "chat_historial": [],
     "perfil_vehiculo": "🚗 Automóvil",
+    "rutas_guardadas": [],
 }
 for _k, _v in _DEFAULTS.items():
     if _k not in st.session_state:
@@ -1111,6 +1123,85 @@ with st.sidebar:
         "<hr style='border-color:rgba(255,255,255,0.15);margin:0.6rem 0;'>",
         unsafe_allow_html=True,
     )
+
+    # ── Rutas personalizadas ─────────────────────────────────────────────────
+    if RUTAS_PERSONALIZADAS_OK:
+        with st.expander("📌 Mis lugares guardados", expanded=False):
+            # Formulario para guardar punto actual
+            _punto_nuevo_nombre = st.text_input(
+                "Nombre del lugar",
+                placeholder="Casa, Trabajo, Gym…",
+                key="ruta_pers_nombre",
+                label_visibility="visible",
+            )
+            _col_gp1, _col_gp2 = st.columns(2)
+            with _col_gp1:
+                if st.button(
+                    "💾 Guardar origen",
+                    key="btn_guardar_origen",
+                    use_container_width=True,
+                    disabled=not (st.session_state.origen and _punto_nuevo_nombre.strip()),
+                ):
+                    agregar_ruta(
+                        _punto_nuevo_nombre.strip(),
+                        st.session_state.origen["lat"],
+                        st.session_state.origen["lon"],
+                        st.session_state.rutas_guardadas,
+                    )
+                    st.toast(f"✅ Guardado: {_punto_nuevo_nombre.strip()}")
+            with _col_gp2:
+                if st.button(
+                    "💾 Guardar destino",
+                    key="btn_guardar_destino",
+                    use_container_width=True,
+                    disabled=not (st.session_state.destino and _punto_nuevo_nombre.strip()),
+                ):
+                    agregar_ruta(
+                        _punto_nuevo_nombre.strip(),
+                        st.session_state.destino["lat"],
+                        st.session_state.destino["lon"],
+                        st.session_state.rutas_guardadas,
+                    )
+                    st.toast(f"✅ Guardado: {_punto_nuevo_nombre.strip()}")
+
+            # Lista de lugares guardados
+            _mis_lugares = listar_rutas(st.session_state.rutas_guardadas)
+            if _mis_lugares:
+                st.markdown(
+                    "<div style='font-size:0.72rem;color:#7B9DB8;margin:6px 0 4px;'>"
+                    "LUGARES GUARDADOS</div>",
+                    unsafe_allow_html=True,
+                )
+                for _lugar in _mis_lugares:
+                    _col_lu1, _col_lu2, _col_lu3 = st.columns([5, 3, 2])
+                    with _col_lu1:
+                        st.markdown(
+                            f"<div style='font-size:0.8rem;color:#C8DFF0;"
+                            f"padding-top:5px;'>{_lugar['nombre']}</div>",
+                            unsafe_allow_html=True,
+                        )
+                    with _col_lu2:
+                        if st.button(
+                            "→ Origen",
+                            key=f"lu_orig_{_lugar['nombre']}",
+                            use_container_width=True,
+                        ):
+                            st.session_state.origen = {
+                                "lat": _lugar["lat"],
+                                "lon": _lugar["lon"],
+                                "nombre": _lugar["nombre"],
+                            }
+                            st.session_state.modo_click = "A"
+                    with _col_lu3:
+                        if st.button(
+                            "🗑",
+                            key=f"lu_del_{_lugar['nombre']}",
+                            use_container_width=True,
+                        ):
+                            eliminar_ruta(_lugar["nombre"], st.session_state.rutas_guardadas)
+                            st.rerun()
+            else:
+                st.caption("Aún no tienes lugares guardados.")
 
     # ── Hora de salida ───────────────────────────────────────────────────────
     st.markdown(
