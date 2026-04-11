@@ -907,6 +907,12 @@ st.markdown(CSS, unsafe_allow_html=True)
 
 st.markdown("""
 <style>
+/* Sidebar siempre visible al cargar (override del estado localStorage) */
+section[data-testid="stSidebar"] {
+    transform: none !important;
+    visibility: visible !important;
+}
+
 /* Botón de colapso de sidebar — Streamlit 1.56 usa stSidebarCollapseButton */
 [data-testid="stSidebarCollapseButton"],
 [data-testid="stSidebarCollapseButton"] button,
