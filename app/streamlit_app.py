@@ -888,30 +888,23 @@ div[data-testid="stSidebar"] small {{
 
 st.markdown(CSS, unsafe_allow_html=True)
 
-# Limpiar localStorage de Streamlit (estado colapsado guardado en browser)
-# Se ejecuta una sola vez por sesión gracias al flag en sessionStorage.
 st.markdown("""
-<script>
-(function() {
-    try {
-        var pls = window.parent.localStorage;
-        var pss = window.parent.sessionStorage;
-        if (pss.getItem('vialai_sb_ok')) return;
-        var keys = [];
-        for (var i = 0; i < pls.length; i++) { keys.push(pls.key(i)); }
-        var removed = 0;
-        keys.forEach(function(k) {
-            if (k && (k.toLowerCase().indexOf('sidebar') >= 0 ||
-                      k.toLowerCase().indexOf('collapsed') >= 0)) {
-                pls.removeItem(k);
-                removed++;
-            }
-        });
-        pss.setItem('vialai_sb_ok', '1');
-        if (removed > 0) { window.parent.location.reload(); }
-    } catch(e) {}
-})();
-</script>
+<style>
+/* Forzar sidebar visible sin importar el estado guardado en el browser */
+section[data-testid="stSidebar"] {
+    transform: none !important;
+    margin-left: 0 !important;
+    min-width: 244px !important;
+    visibility: visible !important;
+}
+/* Ocultar botón de colapsar en escritorio */
+@media (min-width: 992px) {
+    [data-testid="collapsedControl"],
+    [data-testid="stSidebarCollapsedControl"] {
+        display: none !important;
+    }
+}
+</style>
 """, unsafe_allow_html=True)
 
 _logo_html = (
