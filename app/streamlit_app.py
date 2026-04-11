@@ -907,37 +907,46 @@ st.markdown(CSS, unsafe_allow_html=True)
 
 st.markdown("""
 <style>
-/* Forzar sidebar visible sin importar el estado guardado en el browser */
-section[data-testid="stSidebar"] {
-    transform: none !important;
-    margin-left: 0 !important;
-    min-width: 244px !important;
+/* Botón de colapso de sidebar — Streamlit 1.56 usa stSidebarCollapseButton */
+[data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarCollapseButton"] button,
+button[data-testid="stBaseButton-headerNoPadding"] {
     visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
 }
-/* Ocultar botón de colapsar en escritorio */
-@media (min-width: 992px) {
-    [data-testid="collapsedControl"],
-    [data-testid="stSidebarCollapsedControl"] {
-        display: none !important;
-    }
-}
-/* ——— Contador de grabación en verde VialAI ——— */
-section[data-testid="stSidebar"] div[data-testid="stAudioInput"] input,
-section[data-testid="stSidebar"] div[data-testid="stAudioInput"] input[readonly],
-div[data-testid="stAudioInput"] > div > div > div > input {
+
+/* Ícono del botón con color VialAI */
+[data-testid="stSidebarCollapseButton"] svg,
+[data-testid="stSidebarCollapseButton"] span[data-testid="stIconMaterial"],
+button[data-testid="stBaseButton-headerNoPadding"] span[data-testid="stIconMaterial"] {
     color: #22c55e !important;
-    -webkit-text-fill-color: #22c55e !important;
-    font-weight: 700 !important;
-    font-size: 14px !important;
-    caret-color: transparent !important;
+    fill: #22c55e !important;
+    font-size: 22px !important;
 }
-/* Ocultar mensajes de error del widget */
-div[data-testid="stAudioInput"] div[class*="stAlert"],
-div[data-testid="stAudioInput"] div[kind="error"],
-div[data-testid="stAudioInput"] div[role="alert"] {
+
+/* NO forzar width/min-width en stSidebar (rompe la animación) */
+/* NO usar selector universal * dentro del sidebar */
+
+/* Widget audio: ocultar error residual */
+[data-testid="stAudioInput"] [class*="stAlert"],
+[data-testid="stAudioInput"] [aria-label*="error" i] {
     display: none !important;
-    visibility: hidden !important;
 }
+
+/* Contador de audio en verde — solo elementos específicos */
+[data-testid="stAudioInput"] time,
+[data-testid="stAudioInput"] [role="timer"],
+[data-testid="stAudioInput"] input[type="text"][readonly] {
+    color: #22c55e !important;
+    font-weight: 600 !important;
+}
+[data-testid="stAudioInput"] input::placeholder {
+    color: #22c55e !important;
+    opacity: 0.7 !important;
+}
+
 /* Barra de progreso estilo YouTube */
 div[data-testid="stProgress"] > div > div > div {
     background: linear-gradient(90deg, #22c55e 0%, #f59e0b 100%) !important;
@@ -1357,17 +1366,39 @@ with st.sidebar:
                     _fmt = "audio/wav" if _msg["audio"][:4] == b"RIFF" else "audio/mp3"
                     st.audio(_msg["audio"], format=_fmt, autoplay=True)
 
-    # Auto-scroll al último mensaje del asistente con anchor dinámico
+    # Auto-scroll al último mensaje del asistente
     if st.session_state.chat_historial:
-        import time as _t_scroll
-        _anchor_id = f"chat-anchor-{int(_t_scroll.time() * 1000)}"
-        st.markdown(f'<div id="{_anchor_id}"></div>', unsafe_allow_html=True)
-        st.markdown(f"""
+        st.markdown("""
 <script>
-setTimeout(function() {{
-    var el = window.parent.document.getElementById("{_anchor_id}");
-    if (el) el.scrollIntoView({{behavior: 'smooth', block: 'start'}});
-}}, 200);
+(function() {
+    const doc = window.parent.document;
+
+    function buscarUltimoAssistant() {
+        const messages = doc.querySelectorAll('[data-testid="stChatMessage"]');
+        if (messages.length === 0) return null;
+        for (let i = messages.length - 1; i >= 0; i--) {
+            if (messages[i].querySelector('[data-testid="stChatMessageAvatarAssistant"]')) {
+                return messages[i];
+            }
+        }
+        return messages[messages.length - 1];
+    }
+
+    function scroll() {
+        const target = buscarUltimoAssistant();
+        if (!target) return false;
+        target.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+        return true;
+    }
+
+    let intentos = 0;
+    let exitosos = 0;
+    const timer = setInterval(function() {
+        intentos++;
+        if (scroll()) exitosos++;
+        if ((exitosos >= 3) || (intentos >= 15)) clearInterval(timer);
+    }, 200);
+})();
 </script>
 """, unsafe_allow_html=True)
 
