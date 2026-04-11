@@ -888,6 +888,32 @@ div[data-testid="stSidebar"] small {{
 
 st.markdown(CSS, unsafe_allow_html=True)
 
+# Limpiar localStorage de Streamlit (estado colapsado guardado en browser)
+# Se ejecuta una sola vez por sesión gracias al flag en sessionStorage.
+st.markdown("""
+<script>
+(function() {
+    try {
+        var pls = window.parent.localStorage;
+        var pss = window.parent.sessionStorage;
+        if (pss.getItem('vialai_sb_ok')) return;
+        var keys = [];
+        for (var i = 0; i < pls.length; i++) { keys.push(pls.key(i)); }
+        var removed = 0;
+        keys.forEach(function(k) {
+            if (k && (k.toLowerCase().indexOf('sidebar') >= 0 ||
+                      k.toLowerCase().indexOf('collapsed') >= 0)) {
+                pls.removeItem(k);
+                removed++;
+            }
+        });
+        pss.setItem('vialai_sb_ok', '1');
+        if (removed > 0) { window.parent.location.reload(); }
+    } catch(e) {}
+})();
+</script>
+""", unsafe_allow_html=True)
+
 _logo_html = (
     f'<img src="{_LOGO_B64}" style="height:44px;width:auto;object-fit:contain;">'
     if _LOGO_B64
