@@ -910,17 +910,27 @@ section[data-testid="stSidebar"] {
         display: none !important;
     }
 }
-/* Widget de audio: ocultar error residual */
-[data-testid="stAudioInput"] [class*="stAlert"],
-[data-testid="stAudioInput"] [aria-label*="error" i] {
-    display: none !important;
-}
-/* Contador de tiempo en verde — solo elementos específicos, sin * */
-[data-testid="stAudioInput"] time,
-[data-testid="stAudioInput"] [role="timer"],
-[data-testid="stAudioInput"] input[type="text"][readonly] {
+/* ——— Contador de grabación en verde VialAI ——— */
+section[data-testid="stSidebar"] div[data-testid="stAudioInput"] input,
+section[data-testid="stSidebar"] div[data-testid="stAudioInput"] input[readonly],
+div[data-testid="stAudioInput"] > div > div > div > input {
     color: #22c55e !important;
-    font-weight: 600 !important;
+    -webkit-text-fill-color: #22c55e !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    caret-color: transparent !important;
+}
+/* Ocultar mensajes de error del widget */
+div[data-testid="stAudioInput"] div[class*="stAlert"],
+div[data-testid="stAudioInput"] div[kind="error"],
+div[data-testid="stAudioInput"] div[role="alert"] {
+    display: none !important;
+    visibility: hidden !important;
+}
+/* Barra de progreso estilo YouTube */
+div[data-testid="stProgress"] > div > div > div {
+    background: linear-gradient(90deg, #22c55e 0%, #f59e0b 100%) !important;
+    height: 3px !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -1735,8 +1745,15 @@ def render_mapa_od(
     else:
         centro = CDMX_CENTRO; zoom = 11
 
-    _tile = "CartoDB dark_matter" if capa_mapa == "oscuro" else "OpenStreetMap"
+    _tile = "CartoDB dark_matter" if capa_mapa == "oscuro" else None
     m = folium.Map(location=centro, zoom_start=zoom, tiles=_tile, prefer_canvas=True)
+    if capa_mapa != "oscuro":
+        folium.TileLayer(
+            tiles="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+            attr='&copy; <a href="https://carto.com/attributions">CARTO</a>',
+            name="Voyager",
+            control=False,
+        ).add_to(m)
 
     if len(waypoints) >= 2:
         folium.PolyLine(locations=waypoints, color=color, weight=6, opacity=0.85,
@@ -2338,26 +2355,38 @@ if predecir and corredor_activo:
             )
 
 elif not (origen_activo and destino_activo):
-    st.info(
-        "**Cómo usar VialAI:**\n\n"
-        "1. **Ruta rápida** — clic en uno de los 5 corredores del sidebar.\n"
-        "2. **Selectbox** — escribe en los campos Origen / Destino para filtrar.\n"
-        "3. **Clic en mapa** — usa los botones 🟢 A / 🔴 B y haz clic directamente "
-        "sobre el mapa para fijar los puntos.\n\n"
-        "Luego pulsa **🚀 Predecir trayecto**.",
-        icon="🗺️",
-    )
     st.markdown("""
+### 📖 Cómo usar VialAI
+
+**Guía rápida — método manual:**
+1. Selecciona **origen**
+2. Selecciona **destino**
+3. Elige **hora de salida**
+4. Elige **fecha de salida**
+5. Abre **Configuración avanzada** (opcional)
+6. Pulsa 🚀 **Predecir trayecto**
+
+**Guía rápida — asistente de voz 🎤:**
+1. Pulsa el micrófono para **grabar indicación**
+2. Pulsa de nuevo para **detener**
+3. Pulsa 🚀 **Enviar consulta**
+
 ---
+
 #### 💡 Ejemplos de consulta
 
 **Por voz** 🎤 (recomendado al volante):
-> *"Llévame de la estación del Metro Cuatro Caminos al Aeropuerto Internacional de la Ciudad de México hoy a las 6 de la mañana."*
+> *"Llévame de la estación del Metro Cuatro Caminos al Aeropuerto \
+Internacional de la Ciudad de México hoy 11 de abril a las 6 de la mañana."*
 
 **Por texto** ⌨️:
 > *"¿Cuánto tardo de Polanco a Santa Fe a las 7 PM viernes?"*
 
-VialAI interpreta lenguaje natural: origen, destino, fecha y hora en la misma frase. Si omites la hora, se asume la actual.
+**Con ruta personalizada guardada:**
+> *"Usa la ruta Casa-Trabajo para las 5:30 de la tarde de hoy."*
+
+VialAI interpreta lenguaje natural: puedes mencionar origen, destino, \
+fecha, hora y ruta guardada en la misma frase.
 """)
 
 
