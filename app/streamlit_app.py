@@ -105,6 +105,12 @@ try:
 except ImportError:
     VIALAI_OK = False
 
+try:
+    from src.agent.voice_io import transcribir_audio, sintetizar_voz
+    VOICE_IO_OK = True
+except ImportError:
+    VOICE_IO_OK = False
+
 
 # ════════════════════════════════════════════════════════════════════════════
 # UTILIDADES GENERALES
@@ -1201,14 +1207,56 @@ with st.sidebar:
     with _chat_box:
         with st.chat_message("assistant"):
             st.write(_BIENVENIDA)
-        for _msg in st.session_state.chat_historial:
+        for _i, _msg in enumerate(st.session_state.chat_historial):
             with st.chat_message(_msg["role"]):
                 st.write(_msg["content"])
+                # Reproduce el audio solo del último mensaje del asistente
+                if (
+                    _msg.get("audio")
+                    and _i == len(st.session_state.chat_historial) - 1
+                ):
+                    st.audio(_msg["audio"], format="audio/mp3", autoplay=True)
 
-    # Input de lenguaje natural
+    # ── Entrada por voz ──────────────────────────────────────────────────────
+    if VOICE_IO_OK:
+        st.markdown("### 🎤 VialAI — Comando por voz")
+        st.caption("Manos al volante: habla tu ruta y VialAI la calcula.")
+        audio_value = st.audio_input(
+            "Pulsa para grabar",
+            key="vialai_audio_input",
+        )
+        _col_v1, _col_v2 = st.columns(2)
+        with _col_v1:
+            send_voice = st.button("🚀 Enviar voz", use_container_width=True)
+        with _col_v2:
+            tts_enabled = st.toggle("🔊 Respuesta hablada", value=True)
+    else:
+        audio_value = None
+        send_voice = False
+        tts_enabled = False
+
+    # ── Input de lenguaje natural ─────────────────────────────────────────────
     _prompt = st.chat_input("Pregunta a VialAI…")
-    if _prompt:
-        st.session_state.chat_historial.append({"role": "user", "content": _prompt})
+
+    # ── Procesamiento de voz ──────────────────────────────────────────────────
+    _prompt_voz = None
+    if send_voice:
+        if audio_value is not None:
+            with st.spinner("🎧 Transcribiendo tu comando..."):
+                _prompt_voz_raw = transcribir_audio(audio_value.getvalue())
+            if _prompt_voz_raw:
+                _prompt_voz = _prompt_voz_raw
+                st.sidebar.success(f"📝 Entendí: *{_prompt_voz}*")
+            else:
+                st.sidebar.warning("No entendí el audio. Intenta de nuevo.")
+        else:
+            st.sidebar.warning("Graba un mensaje antes de enviar.")
+
+    # Prioridad: voz > texto
+    _prompt_final = _prompt_voz or _prompt
+
+    if _prompt_final:
+        st.session_state.chat_historial.append({"role": "user", "content": _prompt_final})
         _historial_api = [
             {"role": m["role"], "content": m["content"]}
             for m in st.session_state.chat_historial[:-1]
@@ -1217,7 +1265,7 @@ with st.sidebar:
             if VIALAI_OK:
                 try:
                     _vialai = VialAIAgent()
-                    _respuesta = _vialai.run(_prompt, historial=_historial_api)
+                    _respuesta = _vialai.run(_prompt_final, historial=_historial_api)
                 except Exception as _exc:
                     st.error(f"Error al inicializar el agente: {_exc}")
                     _respuesta = f"⚠️ Error al inicializar el agente: {_exc}"
@@ -1226,8 +1274,15 @@ with st.sidebar:
                     "⚠️ El módulo del agente no está disponible. "
                     "Verifica la instalación de src/agent/agent.py."
                 )
+
+        # TTS: solo si la entrada fue por voz y el toggle está activo
+        _audio_respuesta = None
+        if tts_enabled and _prompt_voz and VOICE_IO_OK:
+            with st.spinner("🔊 Generando respuesta hablada..."):
+                _audio_respuesta = sintetizar_voz(_respuesta)
+
         st.session_state.chat_historial.append(
-            {"role": "assistant", "content": _respuesta}
+            {"role": "assistant", "content": _respuesta, "audio": _audio_respuesta}
         )
         st.rerun()
 
@@ -1247,6 +1302,13 @@ if origen_activo and destino_activo:
         destino_activo["lat"], destino_activo["lon"],
         travel_mode=_travel_mode,
     )
+    # ── DEBUG TEMPORAL: número de rutas recibidas ────────────────────────────
+    _fuente_alt = getattr(_rutas_alternativas[0], "fuente", "?") if _rutas_alternativas else "—"
+    st.sidebar.info(
+        f"🛣️ Rutas recibidas: **{len(_rutas_alternativas)}** "
+        f"(fuente: `{_fuente_alt}`)"
+    )
+    # ────────────────────────────────────────────────────────────────────────
     dist_km_activo    = _ruta["distancia_km"]
     waypoints_activos = _ruta["waypoints"]
     corredor_activo: dict | None = {
@@ -2114,9 +2176,16 @@ if predecir and corredor_activo:
         st.divider()
 
     # ── Panel de comparación multi-ruta ──────────────────────────────────────
-    if _resultados_rutas and len(_resultados_rutas) > 1:
+    if _resultados_rutas:
         st.subheader("🗺️ Comparación de rutas alternativas")
-        _cols_rutas = st.columns(len(_resultados_rutas))
+
+        if len(_resultados_rutas) == 1:
+            st.caption(
+                "ℹ️ TomTom no encontró rutas alternativas para este trayecto. "
+                "Se muestra la ruta única disponible."
+            )
+
+        _cols_rutas = st.columns(max(len(_resultados_rutas), 1))
         for _ci, (_col_r, _rr) in enumerate(zip(_cols_rutas, _resultados_rutas)):
             with _col_r:
                 _emoji_sem = {"verde": "🟢", "amarillo": "🟡", "rojo": "🔴"}.get(
@@ -2135,12 +2204,12 @@ if predecir and corredor_activo:
                 if _rr.ratio_compromiso > 1.8:
                     st.caption(f"⚠️ {_rr.ratio_compromiso:.1f}× flujo libre")
 
-        _mejor_rr  = _resultados_rutas[0]
-        _princ_rr  = next((r for r in _resultados_rutas if r.indice == 0), _mejor_rr)
-        if _mejor_rr.razon_recomendacion:
+        _mejor_rr = _resultados_rutas[0]
+        _princ_rr = next((r for r in _resultados_rutas if r.indice == 0), _mejor_rr)
+        if _mejor_rr.razon_recomendacion and len(_resultados_rutas) > 1:
             st.info(_mejor_rr.razon_recomendacion)
 
-        # Mensaje de cambio de ruta para el cliente
+        # Mensaje de cambio de ruta para el cliente (solo si hay alternativas reales)
         if _mejor_rr.indice != 0 and MODULOS_EVALUADOR_OK:
             _expl = generar_explicacion_cambio_ruta(
                 _mejor_rr, _princ_rr,

@@ -69,6 +69,11 @@ gtfs-realtime-bindings==1.0.0  # Parseo de feeds GTFS-RT (Metrobús)
 protobuf==4.25.3          # Dependencia de gtfs-realtime-bindings
 
 # ──────────────────────────────────────────────
+# Voz (TTS/STT para VialAI)
+# ──────────────────────────────────────────────
+openai>=1.40.0                # TTS (tts-1) y STT (Whisper) para interfaz de voz
+
+# ──────────────────────────────────────────────
 # Configuración y utilidades
 # ──────────────────────────────────────────────
 python-dotenv==1.0.1      # Carga de variables de entorno desde .env
