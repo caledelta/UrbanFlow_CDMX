@@ -1266,13 +1266,17 @@ with st.sidebar:
                     _fmt = "audio/wav" if _msg["audio"][:4] == b"RIFF" else "audio/mp3"
                     st.audio(_msg["audio"], format=_fmt, autoplay=True)
 
-    # Auto-scroll al último mensaje del asistente
-    st.markdown("""
+    # Auto-scroll al último mensaje del asistente con anchor dinámico
+    if st.session_state.chat_historial:
+        import time as _t_scroll
+        _anchor_id = f"chat-anchor-{int(_t_scroll.time() * 1000)}"
+        st.markdown(f'<div id="{_anchor_id}"></div>', unsafe_allow_html=True)
+        st.markdown(f"""
 <script>
-setTimeout(function() {
-    var msgs = window.parent.document.querySelectorAll('[data-testid="stChatMessage"]');
-    if (msgs.length > 0) msgs[msgs.length - 1].scrollIntoView({behavior:'smooth', block:'start'});
-}, 300);
+setTimeout(function() {{
+    var el = window.parent.document.getElementById("{_anchor_id}");
+    if (el) el.scrollIntoView({{behavior: 'smooth', block: 'start'}});
+}}, 200);
 </script>
 """, unsafe_allow_html=True)
 
@@ -2006,19 +2010,30 @@ with col_mapa:
 
 if predecir and corredor_activo:
 
-    with st.spinner("🔄 Calculando ruta y simulando 10,000 trayectorias..."):
+    _progress = st.progress(0, text="🔄 Iniciando simulación...")
+    try:
+        _progress.progress(20, text="📡 Consultando TomTom...")
         if usar_api and MODULOS_PIPELINE_OK:
+            _progress.progress(50, text="🎲 Corriendo Monte Carlo (API)...")
             res = simular_modo_api(corredor_activo, hora_salida, dia_idx, n_sims)
             _resultados_rutas: list = []
         else:
+            _progress.progress(45, text="🌦️ Consultando clima...")
+            _progress.progress(65, text="🎲 Corriendo Monte Carlo (10 000 iter)...")
             res = simular_modo_demo(
                 corredor_activo, hora_salida, dia_idx, n_sims,
                 tipo_vehiculo=tipo_vehiculo,
             )
-            # Evaluación multi-ruta (sobre las alternativas obtenidas antes)
+            _progress.progress(85, text="📊 Evaluando rutas alternativas...")
             _resultados_rutas = _simular_multi_ruta(
                 _rutas_alternativas, hora_salida, dia_idx, n_sims, tipo_vehiculo,
             ) if _rutas_alternativas else []
+        _progress.progress(100, text="✅ Listo")
+        import time as _time_prog; _time_prog.sleep(0.3)
+        _progress.empty()
+    except Exception:
+        _progress.empty()
+        raise
 
     _NOMBRES_ESTADO = {0: "Fluido", 1: "Lento", 2: "Congestionado"}
     estado_nombre   = _NOMBRES_ESTADO[res["estado_inicial"]]
