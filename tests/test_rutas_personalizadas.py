@@ -160,3 +160,23 @@ class TestUsarRutaPersonalizadaTool:
         schemas = get_tools_schema()
         nombres = [s["name"] for s in schemas]
         assert "usar_ruta_personalizada" in nombres
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Tests adicionales — buscar_lugar (alias de cargar_ruta)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestBuscarLugar:
+    """Usa cargar_ruta como función de búsqueda (buscar_lugar en la API pública)."""
+
+    def test_buscar_lugar_existente(self):
+        store: list = []
+        agregar_ruta("TestCasa", 19.43, -99.19, store)
+        result = cargar_ruta("TestCasa", store)
+        assert result is not None
+        assert "TestCasa" in result.get("nombre", "")
+
+    def test_buscar_lugar_inexistente(self):
+        store: list = []
+        result = cargar_ruta("LugarQueNoExiste12345", store)
+        assert result is None

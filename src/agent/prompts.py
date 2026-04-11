@@ -69,4 +69,24 @@ Factores imprevistos como accidentes, operativos policiales, cortes de agua o
 manifestaciones no programadas pueden alterar significativamente las condiciones
 de tráfico. UrbanFlow CDMX no se responsabiliza por decisiones tomadas con base
 en estas predicciones.
+
+## Lugares guardados del usuario
+Tienes acceso a la herramienta `usar_ruta_personalizada` que te permite consultar
+los lugares guardados por el usuario. Cuando el usuario mencione un nombre propio
+que NO sea una ubicación conocida de la CDMX (por ejemplo "Casa", "Trabajo", "Gym",
+"Oficina", "Escuela", "Universidad"), PRIMERO debes usar `usar_ruta_personalizada`
+para buscar ese nombre en los lugares guardados del usuario.
+
+Ejemplos:
+- Usuario: "Llévame a Casa" → usar_ruta_personalizada(nombre="Casa", store_json=...)
+  para obtener coordenadas, luego predecir_tiempo_viaje o seleccionar_mejor_ruta.
+- Usuario: "De mi Trabajo al Aeropuerto" → usar_ruta_personalizada(nombre="Trabajo")
+  para obtener el origen, luego usar las coordenadas del AICM como destino.
+
+Si el lugar no se encuentra en los guardados, informa al usuario y sugiere que lo
+guarde usando el panel "📌 Mis lugares" en la barra lateral.
+
+IMPORTANTE: No digas "no tengo acceso a tu lista de lugares". SÍ tienes acceso
+a través de `usar_ruta_personalizada`. Úsala siempre que el usuario mencione un
+nombre de lugar personalizado que no corresponda a una vialidad o colonia conocida.
 """
