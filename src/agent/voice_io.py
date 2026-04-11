@@ -14,6 +14,7 @@ load_dotenv(override=True)
 logger = logging.getLogger(__name__)
 
 STT_BACKEND = os.getenv("VIALAI_STT_BACKEND", "local").lower()  # "local" | "openai"
+TTS_BACKEND = os.getenv("VIALAI_TTS_BACKEND", "openai").lower()  # "openai" | "local" | "off"
 MODEL_STT_OPENAI = "whisper-1"
 MODEL_STT_LOCAL = "base"  # tiny | base | small | medium
 MODEL_TTS = "tts-1"
@@ -105,16 +106,53 @@ def _transcribir_local(audio_bytes: bytes, filename: str) -> str:
 
 
 def sintetizar_voz(texto: str) -> bytes | None:
-    """TTS OpenAI. Retorna None si no hay API key o falla cuota."""
-    if not texto:
+    """
+    TTS con fallback. Retorna bytes MP3/WAV o None si falla/desactivado.
+    Backends: 'openai' (tts-1), 'local' (pyttsx3 SAPI5), 'off'.
+    """
+    if not texto or TTS_BACKEND == "off":
         return None
-    if not os.getenv("OPENAI_API_KEY"):
-        return None
+    texto_corto = texto[:500]
+
+    if TTS_BACKEND == "local":
+        return _tts_local(texto_corto)
+
+    # Backend openai con fallback automático a local si falla
     try:
+        if not os.getenv("OPENAI_API_KEY"):
+            raise RuntimeError("Sin OPENAI_API_KEY")
         r = _get_openai_client().audio.speech.create(
-            model=MODEL_TTS, voice=VOICE, input=texto[:500]
+            model=MODEL_TTS, voice=VOICE, input=texto_corto
         )
         return r.content
     except Exception as e:
-        logger.warning("TTS falló (%s). Continuando sin audio.", e)
+        logger.warning("TTS OpenAI falló (%s). Intentando local...", e)
+        return _tts_local(texto_corto)
+
+
+def _tts_local(texto: str) -> bytes | None:
+    """TTS Windows SAPI5 vía pyttsx3. Voz es-MX si está disponible."""
+    try:
+        import pyttsx3
+        import tempfile
+        import os as _os
+        engine = pyttsx3.init()
+        # Intentar voz en español
+        for voice in engine.getProperty("voices"):
+            if "spanish" in voice.name.lower() or "español" in voice.name.lower() \
+               or "es-" in (voice.id or "").lower():
+                engine.setProperty("voice", voice.id)
+                break
+        engine.setProperty("rate", 180)
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            tmp_path = tmp.name
+        engine.save_to_file(texto, tmp_path)
+        engine.runAndWait()
+        with open(tmp_path, "rb") as f:
+            data = f.read()
+        try: _os.unlink(tmp_path)
+        except OSError: pass
+        return data
+    except Exception as e:
+        logger.warning("TTS local falló (%s). Continuando sin audio.", e)
         return None

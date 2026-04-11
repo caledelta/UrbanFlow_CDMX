@@ -1215,7 +1215,9 @@ with st.sidebar:
                     _msg.get("audio")
                     and _i == len(st.session_state.chat_historial) - 1
                 ):
-                    st.audio(_msg["audio"], format="audio/mp3", autoplay=True)
+                    # pyttsx3 produce WAV, tts-1 produce MP3
+                    _fmt = "audio/wav" if _msg["audio"][:4] == b"RIFF" else "audio/mp3"
+                    st.audio(_msg["audio"], format=_fmt, autoplay=True)
 
     # ── Entrada por voz ──────────────────────────────────────────────────────
     if VOICE_IO_OK:

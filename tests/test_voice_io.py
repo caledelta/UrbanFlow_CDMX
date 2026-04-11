@@ -37,9 +37,15 @@ def test_sintetizar_voz_vacio():
     assert sintetizar_voz("") is None
 
 
-def test_tts_sin_api_key_retorna_none(monkeypatch):
+def test_tts_sin_api_key_usa_fallback_local(monkeypatch):
+    """Sin API key openai debe caer al backend local (pyttsx3)."""
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    assert sintetizar_voz("hola") is None
+    import src.agent.voice_io as vio
+    vio.TTS_BACKEND = "openai"
+    with patch.object(vio, "_tts_local", return_value=b"RIFF_fake_wav") as mock_local:
+        result = sintetizar_voz("hola")
+    mock_local.assert_called_once_with("hola")
+    assert result == b"RIFF_fake_wav"
 
 
 # ── TTS — mock con key ────────────────────────────────────────────────────────
@@ -68,6 +74,12 @@ def test_sintetizar_voz_trunca_500(monkeypatch):
 
 
 # ── Error handling ────────────────────────────────────────────────────────────
+
+def test_tts_backend_off():
+    import src.agent.voice_io as vio
+    vio.TTS_BACKEND = "off"
+    assert vio.sintetizar_voz("hola") is None
+
 
 def test_quota_error_lanza_voice_error():
     voice_io.STT_BACKEND = "openai"
