@@ -1,30 +1,79 @@
+import os
 import pytest
 from unittest.mock import patch, MagicMock
-from src.agent.voice_io import transcribir_audio, sintetizar_voz
+from src.agent import voice_io
+from src.agent.voice_io import VoiceError, transcribir_audio, sintetizar_voz
 
+
+# ── Helpers ──────────────────────────────────────────────────────────────────
+
+def _mock_openai_client():
+    """Devuelve un cliente OpenAI mockeado listo para parchear."""
+    return MagicMock()
+
+
+# ── STT — vacío ───────────────────────────────────────────────────────────────
 
 def test_transcribir_audio_vacio():
     assert transcribir_audio(b"") == ""
 
-def test_transcribir_audio_mock():
-    fake = MagicMock()
-    fake.text = "Llévame de Polanco al AICM"
-    with patch("src.agent.voice_io._client.audio.transcriptions.create", return_value=fake):
-        assert transcribir_audio(b"fake_bytes") == "Llévame de Polanco al AICM"
+
+# ── STT — backend openai ──────────────────────────────────────────────────────
+
+def test_transcribir_audio_mock_openai():
+    voice_io.STT_BACKEND = "openai"
+    fake_resp = MagicMock()
+    fake_resp.text = "Llévame de Polanco al AICM"
+    client = _mock_openai_client()
+    client.audio.transcriptions.create.return_value = fake_resp
+    with patch.object(voice_io, "_get_openai_client", return_value=client):
+        result = transcribir_audio(b"fake_bytes")
+    assert result == "Llévame de Polanco al AICM"
+
+
+# ── TTS — vacío y sin key ─────────────────────────────────────────────────────
 
 def test_sintetizar_voz_vacio():
-    assert sintetizar_voz("") == b""
+    assert sintetizar_voz("") is None
 
-def test_sintetizar_voz_mock():
-    fake = MagicMock()
-    fake.content = b"ID3fakeaudio"
-    with patch("src.agent.voice_io._client.audio.speech.create", return_value=fake):
-        assert sintetizar_voz("Tu ruta tarda 32 minutos") == b"ID3fakeaudio"
 
-def test_sintetizar_voz_trunca_500():
-    fake = MagicMock()
-    fake.content = b"audio"
-    with patch("src.agent.voice_io._client.audio.speech.create", return_value=fake) as mock:
+def test_tts_sin_api_key_retorna_none(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    assert sintetizar_voz("hola") is None
+
+
+# ── TTS — mock con key ────────────────────────────────────────────────────────
+
+def test_sintetizar_voz_mock(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    fake_resp = MagicMock()
+    fake_resp.content = b"ID3fakeaudio"
+    client = _mock_openai_client()
+    client.audio.speech.create.return_value = fake_resp
+    with patch.object(voice_io, "_get_openai_client", return_value=client):
+        result = sintetizar_voz("Tu ruta tarda 32 minutos")
+    assert result == b"ID3fakeaudio"
+
+
+def test_sintetizar_voz_trunca_500(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    fake_resp = MagicMock()
+    fake_resp.content = b"audio"
+    client = _mock_openai_client()
+    client.audio.speech.create.return_value = fake_resp
+    with patch.object(voice_io, "_get_openai_client", return_value=client) as _:
         sintetizar_voz("x" * 1000)
-        kwargs = mock.call_args.kwargs
-        assert len(kwargs["input"]) == 500
+    kwargs = client.audio.speech.create.call_args.kwargs
+    assert len(kwargs["input"]) == 500
+
+
+# ── Error handling ────────────────────────────────────────────────────────────
+
+def test_quota_error_lanza_voice_error():
+    voice_io.STT_BACKEND = "openai"
+    client = _mock_openai_client()
+    client.audio.transcriptions.create.side_effect = Exception("Error 429 insufficient_quota")
+    with patch.object(voice_io, "_get_openai_client", return_value=client):
+        with pytest.raises(VoiceError) as exc_info:
+            transcribir_audio(b"xxx")
+    assert "créditos" in exc_info.value.user_msg.lower()

@@ -71,7 +71,8 @@ protobuf==4.25.3          # Dependencia de gtfs-realtime-bindings
 # ──────────────────────────────────────────────
 # Voz (TTS/STT para VialAI)
 # ──────────────────────────────────────────────
-openai>=1.40.0                # TTS (tts-1) y STT (Whisper) para interfaz de voz
+openai>=1.40.0                # TTS (tts-1) y STT (Whisper API) para interfaz de voz
+faster-whisper>=1.0.0        # STT local gratuito (backend CPU, sin cuota)
 
 # ──────────────────────────────────────────────
 # Configuración y utilidades

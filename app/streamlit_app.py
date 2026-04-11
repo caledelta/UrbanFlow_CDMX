@@ -1246,13 +1246,20 @@ with st.sidebar:
     _prompt_voz = None
     if send_voice:
         if audio_value is not None:
-            with st.spinner("🎧 Transcribiendo tu comando..."):
-                _prompt_voz_raw = transcribir_audio(audio_value.getvalue())
-            if _prompt_voz_raw:
-                _prompt_voz = _prompt_voz_raw
-                st.sidebar.success(f"📝 Entendí: *{_prompt_voz}*")
-            else:
-                st.sidebar.warning("No entendí el audio. Intenta de nuevo.")
+            try:
+                with st.spinner("🎧 Transcribiendo tu comando..."):
+                    _prompt_voz_raw = transcribir_audio(audio_value.getvalue())
+                if _prompt_voz_raw:
+                    _prompt_voz = _prompt_voz_raw
+                    st.sidebar.success(f"📝 Entendí: *{_prompt_voz_raw}*")
+                else:
+                    st.sidebar.warning("No entendí el audio. Intenta de nuevo.")
+            except Exception as _ve:
+                from src.agent.voice_io import VoiceError
+                if isinstance(_ve, VoiceError):
+                    st.sidebar.error(f"🎤 {_ve.user_msg}")
+                else:
+                    st.sidebar.error(f"🎤 Error inesperado: {_ve}")
         else:
             st.sidebar.warning("Graba un mensaje antes de enviar.")
 
