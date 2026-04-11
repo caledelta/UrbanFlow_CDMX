@@ -106,7 +106,13 @@ except ImportError:
     VIALAI_OK = False
 
 try:
-    from src.agent.voice_io import transcribir_audio, sintetizar_voz, resumen_para_voz
+    from src.agent.voice_io import (
+        transcribir_audio,
+        sintetizar_voz,
+        resumen_para_voz,
+        limpiar_para_tts,
+        VoiceError,
+    )
     VOICE_IO_OK = True
 except ImportError:
     VOICE_IO_OK = False
@@ -1314,7 +1320,6 @@ setTimeout(function() {
                 else:
                     st.sidebar.warning("No entendí el audio. Intenta de nuevo.")
             except Exception as _ve:
-                from src.agent.voice_io import VoiceError
                 if isinstance(_ve, VoiceError):
                     st.sidebar.error(f"🎤 {_ve.user_msg}")
                 else:
