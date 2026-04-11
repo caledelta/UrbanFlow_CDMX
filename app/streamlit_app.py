@@ -890,31 +890,42 @@ st.markdown(CSS, unsafe_allow_html=True)
 
 st.markdown("""
 <style>
-/* Sidebar siempre visible, independiente del estado del browser */
+/* Garantizar sidebar visible y control de expansión legible */
 [data-testid="stSidebar"] {
-    display: block !important;
-    transform: translateX(0) !important;
+    min-width: 280px !important;
     visibility: visible !important;
 }
-/* Ocultar botón colapsar en escritorio; visible en pantallas pequeñas */
-@media (min-width: 992px) {
-    [data-testid="collapsedControl"] {
-        display: none !important;
-    }
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"] {
+    visibility: visible !important;
+    display: block !important;
+    color: #22c55e !important;
+    background: rgba(34, 197, 94, 0.15) !important;
+    border-radius: 4px !important;
+    padding: 4px !important;
 }
-/* Ocultar mensaje de error residual del widget st.audio_input */
-[data-testid="stAudioInput"] [class*="error"],
-[data-testid="stAudioInput"] div:has(> svg[aria-label*="error"]) {
+[data-testid="stSidebarCollapsedControl"] svg,
+[data-testid="collapsedControl"] svg {
+    fill: #22c55e !important;
+    stroke: #22c55e !important;
+}
+
+/* Widget de audio: ocultar mensaje de error residual */
+[data-testid="stAudioInput"] [class*="stAlert"],
+[data-testid="stAudioInput"] [aria-label*="error" i] {
     display: none !important;
 }
-/* Texto del contador de tiempo en verde VialAI */
-[data-testid="stAudioInput"] * {
-    color: #22c55e !important;
-}
-[data-testid="stAudioInput"] input,
-[data-testid="stAudioInput"] span {
+
+/* Solo el contador de tiempo en verde — selector ESTRICTO, sin asterisco */
+[data-testid="stAudioInput"] time,
+[data-testid="stAudioInput"] [role="timer"],
+[data-testid="stAudioInput"] input[type="text"][readonly] {
     color: #22c55e !important;
     font-weight: 600 !important;
+}
+[data-testid="stAudioInput"] input::placeholder {
+    color: #22c55e !important;
+    opacity: 0.7 !important;
 }
 </style>
 """, unsafe_allow_html=True)
