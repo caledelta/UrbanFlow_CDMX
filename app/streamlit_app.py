@@ -890,6 +890,15 @@ st.markdown(CSS, unsafe_allow_html=True)
 
 st.markdown("""
 <style>
+/* Sidebar siempre visible, independiente del estado del browser */
+[data-testid="stSidebar"] {
+    display: block !important;
+    transform: translateX(0) !important;
+    visibility: visible !important;
+}
+[data-testid="collapsedControl"] {
+    display: none !important;
+}
 /* Ocultar mensaje de error residual del widget st.audio_input */
 [data-testid="stAudioInput"] [class*="error"],
 [data-testid="stAudioInput"] div:has(> svg[aria-label*="error"]) {
