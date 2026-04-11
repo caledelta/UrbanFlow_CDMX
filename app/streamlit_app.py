@@ -1099,31 +1099,6 @@ with st.sidebar:
     else:
         dist_km = None
 
-    # ── Rutas frecuentes ─────────────────────────────────────────────────────
-    st.markdown(
-        "<div style='font-size:0.72rem;color:#7B9DB8;text-transform:uppercase;"
-        "letter-spacing:.06em;font-weight:600;margin:8px 0 6px;'>"
-        "⚡ Rutas frecuentes</div>",
-        unsafe_allow_html=True,
-    )
-    for nombre_ruta, datos_ruta in CORREDORES.items():
-        etiqueta = f"{datos_ruta['icono']} {nombre_ruta.split('·')[0].strip()}"
-        if st.button(etiqueta, key=f"btn_{nombre_ruta[:20]}", use_container_width=True):
-            st.session_state.ruta_rapida_origen  = datos_ruta["origen_key"]
-            st.session_state.ruta_rapida_destino = datos_ruta["destino_key"]
-            lat_o, lon_o = PUNTOS_CDMX[datos_ruta["origen_key"]]
-            lat_d, lon_d = PUNTOS_CDMX[datos_ruta["destino_key"]]
-            st.session_state.origen  = {"lat": lat_o, "lon": lon_o, "nombre": datos_ruta["origen_key"]}
-            st.session_state.destino = {"lat": lat_d, "lon": lon_d, "nombre": datos_ruta["destino_key"]}
-            st.session_state.waypoints_activos = datos_ruta["waypoints"]
-            st.session_state.color_ruta        = datos_ruta["color_mapa"]
-            st.session_state.modo_click        = "A"
-
-    st.markdown(
-        "<hr style='border-color:rgba(255,255,255,0.15);margin:0.6rem 0;'>",
-        unsafe_allow_html=True,
-    )
-
     # ── Rutas personalizadas ─────────────────────────────────────────────────
     if RUTAS_PERSONALIZADAS_OK:
         with st.expander("📌 Mis lugares guardados", expanded=False):
@@ -1202,6 +1177,31 @@ with st.sidebar:
                             st.rerun()
             else:
                 st.caption("Aún no tienes lugares guardados.")
+
+    # ── Rutas frecuentes ─────────────────────────────────────────────────────
+    st.markdown(
+        "<div style='font-size:0.72rem;color:#7B9DB8;text-transform:uppercase;"
+        "letter-spacing:.06em;font-weight:600;margin:8px 0 6px;'>"
+        "⚡ Rutas frecuentes</div>",
+        unsafe_allow_html=True,
+    )
+    for nombre_ruta, datos_ruta in CORREDORES.items():
+        etiqueta = f"{datos_ruta['icono']} {nombre_ruta.split('·')[0].strip()}"
+        if st.button(etiqueta, key=f"btn_{nombre_ruta[:20]}", use_container_width=True):
+            st.session_state.ruta_rapida_origen  = datos_ruta["origen_key"]
+            st.session_state.ruta_rapida_destino = datos_ruta["destino_key"]
+            lat_o, lon_o = PUNTOS_CDMX[datos_ruta["origen_key"]]
+            lat_d, lon_d = PUNTOS_CDMX[datos_ruta["destino_key"]]
+            st.session_state.origen  = {"lat": lat_o, "lon": lon_o, "nombre": datos_ruta["origen_key"]}
+            st.session_state.destino = {"lat": lat_d, "lon": lon_d, "nombre": datos_ruta["destino_key"]}
+            st.session_state.waypoints_activos = datos_ruta["waypoints"]
+            st.session_state.color_ruta        = datos_ruta["color_mapa"]
+            st.session_state.modo_click        = "A"
+
+    st.markdown(
+        "<hr style='border-color:rgba(255,255,255,0.15);margin:0.6rem 0;'>",
+        unsafe_allow_html=True,
+    )
 
     # ── Hora de salida ───────────────────────────────────────────────────────
     st.markdown(
