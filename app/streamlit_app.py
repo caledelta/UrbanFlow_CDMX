@@ -1034,6 +1034,7 @@ _DEFAULTS: dict = {
     "viaje_origen":    None,
     "viaje_destino":   None,
     "feedback_historial": [],
+    "recompensa_entregada": False,
 }
 for _k, _v in _DEFAULTS.items():
     if _k not in st.session_state:
@@ -2687,6 +2688,59 @@ if predecir and corredor_activo:
             "p90":          res["p90"],
             "distancia_km": corredor_activo["distancia_km"],
         })
+    except Exception:
+        pass
+
+    # ── Recompensa silenciosa (perfil completo) ───────────────────────────────
+    try:
+        from src.core.recompensa import (
+            perfil_completo as _perf_completo,
+            generar_analisis as _gen_analisis,
+        )
+        from src.core.telemetria import (
+            cargar_perfil as _cp_recomp,
+            obtener_stats_usuario as _gs_recomp,
+        )
+        _perfil_r = _cp_recomp()
+        if _perf_completo(_perfil_r) and not st.session_state.get("recompensa_entregada", False):
+            _stats_r   = _gs_recomp()
+            _fb_hist_r = st.session_state.get("feedback_historial", [])
+            _analisis  = _gen_analisis(_perfil_r, _stats_r, _fb_hist_r, _hora)
+            _comp      = _analisis["company"]
+            _color     = _comp["color"] if _comp else "#22c55e"
+            _bg        = _comp["bg"]    if _comp else "rgba(34,197,94,0.10)"
+            _emoji     = _comp["emoji"] if _comp else "🚗"
+            _tipo      = _analisis["tipo"] or "tu empresa"
+            _ventana   = _analisis["ventana"]
+            st.markdown(
+                f"""
+                <div style="
+                    border-left: 4px solid {_color};
+                    background: {_bg};
+                    border-radius: 10px;
+                    padding: 1rem 1.2rem 0.8rem 1.2rem;
+                    margin: 1rem 0;
+                ">
+                    <div style="font-size:1.1rem;font-weight:700;color:{_color};margin-bottom:0.4rem;">
+                        {_emoji} Análisis personalizado para {_tipo}
+                    </div>
+                    <p style="margin:0 0 0.6rem 0;font-size:0.92rem;">
+                        {_analisis["tip"]}
+                    </p>
+                    <hr style="border-color:{_color};opacity:0.25;margin:0.5rem 0;">
+                    <div style="font-size:0.88rem;line-height:1.7;">
+                        <b>🕐 Ventana óptima CDMX</b> — {_ventana['estado']}<br>
+                        {_ventana['consejo']}<br>
+                        ✅ <b>Mejor hora:</b> {_ventana['mejor']}<br>
+                        ⚠️ <b>Peor hora:</b> {_ventana['peor']}
+                    </div>
+                    {"<hr style='border-color:" + _color + ";opacity:0.25;margin:0.5rem 0;'><div style='font-size:0.88rem;line-height:1.7;'><b>📍 Tu ruta más frecuente:</b> " + str(_analisis['ruta_principal'][0]) + " (" + str(_analisis['ruta_principal'][1]) + " consultas)</div>" if _analisis.get("ruta_principal") else ""}
+                    {"<div style='font-size:0.85rem;color:#666;margin-top:0.4rem;'>📊 Total de consultas: <b>" + str(_analisis['total_consultas']) + "</b>" + (" · Tiempo real promedio: <b>" + str(_analisis['avg_real_min']) + " min</b>" if _analisis.get('avg_real_min') else "") + "</div>" if _analisis['total_consultas'] > 0 else ""}
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.session_state["recompensa_entregada"] = True
     except Exception:
         pass
 
