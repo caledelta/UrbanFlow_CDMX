@@ -958,6 +958,36 @@ div[data-testid="stProgress"] > div > div > div {
     background: linear-gradient(90deg, #22c55e 0%, #f59e0b 100%) !important;
     height: 3px !important;
 }
+
+/* ── Botón "Llegué" estilo game power-up ─────────────────────────────── */
+@keyframes vialai-mushroom-bounce {
+    0%,100% { transform: translateY(0) scale(1); }
+    30%      { transform: translateY(-6px) scale(1.12); }
+    60%      { transform: translateY(-2px) scale(1.04); }
+}
+@keyframes vialai-glow-pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.55), 0 4px 16px rgba(0,0,0,0.4); }
+    50%     { box-shadow: 0 0 0 10px rgba(34,197,94,0), 0 4px 20px rgba(34,197,94,0.3); }
+}
+[data-testid="stButton"] button[kind="primary"]#vialai-llegue-btn,
+div[data-testid="stSidebar"] button.vialai-llegue {
+    background: linear-gradient(135deg, #16a34a 0%, #22c55e 60%, #4ade80 100%) !important;
+    color: #fff !important;
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.04em !important;
+    border: none !important;
+    border-radius: 14px !important;
+    padding: 0.55rem 0 !important;
+    animation: vialai-glow-pulse 1.6s ease-in-out infinite !important;
+    cursor: pointer !important;
+}
+div.vialai-llegue-emoji {
+    display: inline-block;
+    animation: vialai-mushroom-bounce 0.9s ease-in-out infinite;
+    font-size: 1.4rem;
+    margin-right: 4px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -998,6 +1028,12 @@ _DEFAULTS: dict = {
     "chat_historial": [],
     "perfil_vehiculo": "🚗 Automóvil",
     "rutas_guardadas": [],
+    "viaje_activo":    False,
+    "viaje_inicio":    None,
+    "viaje_p50":       None,
+    "viaje_origen":    None,
+    "viaje_destino":   None,
+    "feedback_historial": [],
 }
 for _k, _v in _DEFAULTS.items():
     if _k not in st.session_state:
@@ -1009,6 +1045,64 @@ for _k, _v in _DEFAULTS.items():
 # ════════════════════════════════════════════════════════════════════════════
 
 with st.sidebar:
+
+    # ── Botón "Llegué" — solo visible cuando hay viaje activo ────────────────
+    if st.session_state.viaje_activo:
+        import datetime as _dt_llegue
+        _elapsed = int(
+            (_dt_llegue.datetime.now() - st.session_state.viaje_inicio).total_seconds() / 60
+        ) if st.session_state.viaje_inicio else 0
+        st.markdown(
+            f"<div style='background:rgba(22,163,74,0.18);border:1.5px solid #22c55e;"
+            f"border-radius:12px;padding:8px 10px 4px;margin-bottom:6px;'>"
+            f"<div style='font-size:0.7rem;color:#7EC8A4;font-weight:600;"
+            f"text-transform:uppercase;letter-spacing:.05em;'>🚦 Viaje en curso · {_elapsed} min</div>"
+            f"<div style='font-size:0.72rem;color:#A8C4D8;margin-top:2px;'>"
+            f"{st.session_state.viaje_origen or '?'} → {st.session_state.viaje_destino or '?'}"
+            f"</div></div>",
+            unsafe_allow_html=True,
+        )
+        # Emoji animado con CSS + botón nativo Streamlit (máxima fiabilidad)
+        st.markdown(
+            "<div class='vialai-llegue-emoji'>🍄</div>"
+            "<span style='font-size:0.78rem;color:#4ade80;font-weight:700;"
+            "vertical-align:middle;'>¡Ya llegué!</span>",
+            unsafe_allow_html=True,
+        )
+        if st.button(
+            "🏁 ¡Llegué!",
+            key="btn_llegue",
+            use_container_width=True,
+            type="primary",
+        ):
+            _dt_fin = _dt_llegue.datetime.now()
+            _real_min = round(
+                (_dt_fin - st.session_state.viaje_inicio).total_seconds() / 60, 1
+            )
+            _p50 = st.session_state.viaje_p50 or 1
+            _error_pct = round((_real_min - _p50) / _p50 * 100, 1)
+            _registro = {
+                "origen":    st.session_state.viaje_origen,
+                "destino":   st.session_state.viaje_destino,
+                "p50_min":   _p50,
+                "real_min":  _real_min,
+                "error_pct": _error_pct,
+                "ts":        _dt_fin.isoformat(),
+            }
+            st.session_state.feedback_historial.append(_registro)
+            st.session_state.viaje_activo  = False
+            st.session_state.viaje_inicio  = None
+            st.session_state.viaje_p50     = None
+            st.session_state.viaje_origen  = None
+            st.session_state.viaje_destino = None
+            # Mensaje de feedback personalizado
+            if abs(_error_pct) <= 10:
+                st.toast(f"🎯 ¡Predicción exacta! Real: {_real_min} min (P50 era {_p50} min)")
+            elif _real_min < _p50:
+                st.toast(f"⚡ Llegaste {abs(_error_pct):.0f}% más rápido de lo predicho · {_real_min} min")
+            else:
+                st.toast(f"🐢 Tardaste {_error_pct:.0f}% más de lo predicho · {_real_min} min")
+            st.rerun()
 
     st.markdown(
         "<hr style='border-color:rgba(29,158,117,0.30);margin:0.4rem 0 0.4rem;'>",
@@ -2223,6 +2317,14 @@ if predecir and corredor_activo:
     except Exception:
         _progress.empty()
         raise
+
+    # ── Activar viaje para feedback real vs predicho ─────────────────────────
+    import datetime as _dt_viaje
+    st.session_state.viaje_activo  = True
+    st.session_state.viaje_inicio  = _dt_viaje.datetime.now()
+    st.session_state.viaje_p50     = res["p50"]
+    st.session_state.viaje_origen  = origen_activo["nombre"] if origen_activo else "?"
+    st.session_state.viaje_destino = destino_activo["nombre"] if destino_activo else "?"
 
     _NOMBRES_ESTADO = {0: "Fluido", 1: "Lento", 2: "Congestionado"}
     estado_nombre   = _NOMBRES_ESTADO[res["estado_inicial"]]
