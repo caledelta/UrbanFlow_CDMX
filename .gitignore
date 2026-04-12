@@ -124,3 +124,6 @@ cmdstan*/
 # ──────────────────────────────────────────────
 *.aux
 *.out
+
+# Telemetría local — datos personales
+data/telemetry/
