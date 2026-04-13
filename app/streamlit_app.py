@@ -1047,6 +1047,11 @@ for _k, _v in _DEFAULTS.items():
 
 with st.sidebar:
 
+    # ── Resetear selectboxes si se pidió limpiar (debe ir ANTES de crearlos) ──
+    if st.session_state.pop("_limpiar_sel", False):
+        st.session_state["sel_origen_tab"]  = OPCION_MAPA
+        st.session_state["sel_destino_tab"] = OPCION_MAPA
+
     # ── Botón "Llegué" — solo visible cuando hay viaje activo ────────────────
     if st.session_state.viaje_activo:
         import datetime as _dt_llegue
@@ -1110,7 +1115,7 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    # ── 📌 Mis lugares (tabs: Origen / Destino / Guardados / Nuevo) ──────────
+ # ── 📌 Mis lugares (tabs: Origen / Destino / Guardados / Nuevo) ──────────
     with st.expander("📌 Mis lugares", expanded=True):
         _tab_o, _tab_d, _tab_guardados, _tab_nuevo = st.tabs([
             "📍 Origen", "🎯 Destino", "⭐ Guardados", "➕ Nuevo"
@@ -1143,7 +1148,11 @@ with st.sidebar:
                     unsafe_allow_html=True,
                 )
                 if RUTAS_PERSONALIZADAS_OK:
-                    _mis_lug_o = listar_rutas(st.session_state.rutas_guardadas)
+                    # Filtrar: solo lugares marcados como origen o ambos
+                    _mis_lug_o = [
+                        _l for _l in listar_rutas(st.session_state.rutas_guardadas)
+                        if _l.get("tipo", "ambos") in ("origen", "ambos")
+                    ]
                     if _mis_lug_o:
                         st.markdown(
                             "<div style='font-size:0.7rem;color:#7B9DB8;margin:5px 0 3px;'>"
@@ -1190,7 +1199,11 @@ with st.sidebar:
                     unsafe_allow_html=True,
                 )
                 if RUTAS_PERSONALIZADAS_OK:
-                    _mis_lug_d = listar_rutas(st.session_state.rutas_guardadas)
+                    # Filtrar: solo lugares marcados como destino o ambos
+                    _mis_lug_d = [
+                        _l for _l in listar_rutas(st.session_state.rutas_guardadas)
+                        if _l.get("tipo", "ambos") in ("destino", "ambos")
+                    ]
                     if _mis_lug_d:
                         st.markdown(
                             "<div style='font-size:0.7rem;color:#7B9DB8;margin:5px 0 3px;'>"
@@ -1214,102 +1227,147 @@ with st.sidebar:
             if RUTAS_PERSONALIZADAS_OK:
                 _mis_lugares = listar_rutas(st.session_state.rutas_guardadas)
                 if _mis_lugares:
-                    for _lugar in _mis_lugares:
-                        _cl1, _cl2, _cl3, _cl4 = st.columns([4, 1, 1, 1])
-                        with _cl1:
-                            st.markdown(
-                                f"<div style='font-size:0.8rem;color:#C8DFF0;padding-top:6px;'>"
-                                f"{_lugar['nombre']}</div>",
-                                unsafe_allow_html=True,
-                            )
-                        with _cl2:
-                            if st.button("📍", key=f"lu_orig_{_lugar['nombre']}", use_container_width=True):
-                                st.session_state.origen = {
-                                    "lat": _lugar["lat"], "lon": _lugar["lon"], "nombre": _lugar["nombre"],
-                                }
-                                st.session_state.modo_click = "A"
-                        with _cl3:
-                            if st.button("🎯", key=f"lu_dest_{_lugar['nombre']}", use_container_width=True):
-                                st.session_state.destino = {
-                                    "lat": _lugar["lat"], "lon": _lugar["lon"], "nombre": _lugar["nombre"],
-                                }
-                                st.session_state.modo_click = "B"
-                        with _cl4:
-                            if st.button("🗑️", key=f"lu_del_{_lugar['nombre']}", use_container_width=True):
-                                eliminar_ruta(_lugar["nombre"], st.session_state.rutas_guardadas)
-                                st.rerun()
+                    # Subsecciones sutiles por tipo (ambos aparece en las dos)
+                    _origenes = [
+                        _l for _l in _mis_lugares
+                        if _l.get("tipo", "ambos") in ("origen", "ambos")
+                    ]
+                    _destinos = [
+                        _l for _l in _mis_lugares
+                        if _l.get("tipo", "ambos") in ("destino", "ambos")
+                    ]
+
+                    def _render_lista(lugares, prefijo_key):
+                        for _lugar in lugares:
+                            _col_nombre, _col_del = st.columns([6, 1])
+                            with _col_nombre:
+                                _dir = _lugar.get("direccion", "")
+                                _sub = (
+                                    f"<br><span style='color:#8AADCA;font-size:0.7rem;'>"
+                                    f"{_dir}</span>"
+                                    if _dir else ""
+                                )
+                                st.markdown(
+                                    f"<div style='font-size:0.8rem;color:#C8DFF0;padding-top:6px;'>"
+                                    f"{_lugar['nombre']}{_sub}</div>",
+                                    unsafe_allow_html=True,
+                                )
+                            with _col_del:
+                                if st.button(
+                                    "🗑️",
+                                    key=f"{prefijo_key}_{_lugar['nombre']}",
+                                    use_container_width=True,
+                                ):
+                                    eliminar_ruta(
+                                        _lugar["nombre"],
+                                        st.session_state.rutas_guardadas,
+                                    )
+                                    st.rerun()
+
+                    if _origenes:
+                        st.markdown(
+                            "<div style='font-size:0.7rem;color:#7EC8A4;"
+                            "margin:4px 0 4px;letter-spacing:0.5px;'>"
+                            "📍 SUELES SALIR DE</div>",
+                            unsafe_allow_html=True,
+                        )
+                        _render_lista(_origenes, "del_o")
+
+                    if _origenes and _destinos:
+                        st.markdown(
+                            "<hr style='border:none;border-top:1px solid #1F2937;"
+                            "margin:8px 0;'/>",
+                            unsafe_allow_html=True,
+                        )
+
+                    if _destinos:
+                        st.markdown(
+                            "<div style='font-size:0.7rem;color:#E88;"
+                            "margin:4px 0 4px;letter-spacing:0.5px;'>"
+                            "🎯 SUELES IR A</div>",
+                            unsafe_allow_html=True,
+                        )
+                        _render_lista(_destinos, "del_d")
                 else:
-                    st.caption("Aún no tienes lugares guardados.")
-                st.markdown(
-                    "<div style='font-size:0.7rem;color:#7B9DB8;margin:8px 0 3px;'>"
-                    "GUARDAR PUNTO ACTIVO</div>",
-                    unsafe_allow_html=True,
-                )
-                _punto_nuevo_nombre = st.text_input(
-                    "Nombre", placeholder="Casa, Trabajo, Gym…", key="ruta_pers_nombre",
-                )
-                _cgp1, _cgp2 = st.columns(2)
-                with _cgp1:
-                    if st.button(
-                        "📍 Guardar origen", key="btn_guardar_origen",
-                        use_container_width=True,
-                        disabled=not (st.session_state.origen and _punto_nuevo_nombre.strip()),
-                    ):
-                        agregar_ruta(
-                            _punto_nuevo_nombre.strip(),
-                            st.session_state.origen["lat"],
-                            st.session_state.origen["lon"],
-                            st.session_state.rutas_guardadas,
-                        )
-                        st.toast(f"✅ Guardado: {_punto_nuevo_nombre.strip()}")
-                with _cgp2:
-                    if st.button(
-                        "🎯 Guardar destino", key="btn_guardar_destino",
-                        use_container_width=True,
-                        disabled=not (st.session_state.destino and _punto_nuevo_nombre.strip()),
-                    ):
-                        agregar_ruta(
-                            _punto_nuevo_nombre.strip(),
-                            st.session_state.destino["lat"],
-                            st.session_state.destino["lon"],
-                            st.session_state.rutas_guardadas,
-                        )
-                        st.toast(f"✅ Guardado: {_punto_nuevo_nombre.strip()}")
+                    st.caption("Aún no tienes lugares guardados. Agrégalos en ➕ Nuevo.")
             else:
                 st.caption("Módulo de lugares no disponible.")
 
         with _tab_nuevo:
             if RUTAS_PERSONALIZADAS_OK:
                 _nuevo_nombre = st.text_input(
-                    "Nombre", placeholder="Oficina, Escuela…", key="lugar_nuevo_nombre",
+                    "Nombre del lugar", placeholder="Casa, Oficina, Gym…",
+                    key="lugar_nuevo_nombre",
                 )
-                _nueva_dir = st.text_input(
-                    "Referencia (colonia, cruce, metro…)",
-                    placeholder="Ej. Metro Insurgentes",
-                    key="lugar_nuevo_dir",
+                _nueva_direccion = st.text_input(
+                    "Dirección o referencia (opcional)",
+                    placeholder="Av. Reforma 222, Cuauhtémoc",
+                    key="lugar_nuevo_direccion",
                 )
-                if st.button(
-                    "➕ Guardar lugar", key="btn_nuevo_lugar",
-                    use_container_width=True,
-                    disabled=not (_nuevo_nombre.strip() and _nueva_dir.strip()),
-                ):
-                    _ref = _nueva_dir.strip()
-                    _match = next(
-                        (v for k, v in PUNTOS_CDMX.items()
-                         if _ref.lower() in k.lower() or k.lower() in _ref.lower()),
-                        None,
+                _OPCION_MAPA_NUE = "📍 Seleccionar en el mapa"
+                _opciones_nuevo  = [_OPCION_MAPA_NUE] + sorted(PUNTOS_CDMX.keys())
+                _sel_nuevo = st.selectbox(
+                    "Ubicación",
+                    options=_opciones_nuevo,
+                    index=0,
+                    key="lugar_nuevo_sel",
+                )
+                _nuevo_tipo = st.radio(
+                    "¿Cómo usas este lugar?",
+                    options=["Ambos", "Origen", "Destino"],
+                    index=0,
+                    horizontal=True,
+                    key="lugar_nuevo_tipo",
+                )
+                # Resolver coordenadas según selección
+                _nuevo_lat = _nuevo_lon = None
+                _nuevo_label = ""
+                if _sel_nuevo == _OPCION_MAPA_NUE:
+                    _punto_mapa = (
+                        st.session_state.get("origen")
+                        or st.session_state.get("destino")
                     )
-                    if _match:
-                        agregar_ruta(
-                            _nuevo_nombre.strip(), _match[0], _match[1],
-                            st.session_state.rutas_guardadas,
+                    if _punto_mapa:
+                        _nuevo_lat   = _punto_mapa["lat"]
+                        _nuevo_lon   = _punto_mapa["lon"]
+                        _nuevo_label = _punto_mapa["nombre"]
+                        st.markdown(
+                            f"<div style='font-size:0.75rem;color:#7EC8A4;margin-top:2px;'>"
+                            f"📌 {_nuevo_label}<br>"
+                            f"<span style='color:#8AADCA;'>{_nuevo_lat:.4f}, {_nuevo_lon:.4f}</span></div>",
+                            unsafe_allow_html=True,
                         )
-                        st.toast(f"✅ Guardado: {_nuevo_nombre.strip()}")
                     else:
-                        st.warning(
-                            "No se encontró la referencia. "
-                            "Prueba con Metro, avenida o colonia conocida."
-                        )
+                        st.caption("Haz clic en el mapa para marcar un punto primero.")
+                else:
+                    _nuevo_lat, _nuevo_lon = PUNTOS_CDMX[_sel_nuevo]
+                    _nuevo_label = _sel_nuevo
+                    st.markdown(
+                        f"<div style='font-size:0.75rem;color:#8AADCA;margin-top:2px;'>"
+                        f"{_nuevo_lat:.4f}, {_nuevo_lon:.4f}</div>",
+                        unsafe_allow_html=True,
+                    )
+                _can_save_nuevo = bool(_nuevo_nombre.strip() and _nuevo_lat is not None)
+                if st.button(
+                    "💾 Guardar lugar",
+                    key="btn_nuevo_guardar",
+                    use_container_width=True,
+                    disabled=not _can_save_nuevo,
+                    type="primary",
+                ):
+                    agregar_ruta(
+                        _nuevo_nombre.strip(),
+                        _nuevo_lat,
+                        _nuevo_lon,
+                        st.session_state.rutas_guardadas,
+                        direccion=_nueva_direccion.strip(),
+                        tipo=_nuevo_tipo.lower(),
+                    )
+                    st.toast(
+                        f"✅ {_nuevo_nombre.strip()} guardado como "
+                        f"{_nuevo_tipo.lower()}"
+                    )
+                    st.rerun()
             else:
                 st.caption("Módulo de lugares no disponible.")
 
@@ -1493,6 +1551,17 @@ with st.sidebar:
             _cargar_perfil = _guardar_perfil = None
 
         st.caption("Opcional. Nos ayuda a mejorar VialAI para tu zona.")
+        _pcol1, _pcol2 = st.columns(2)
+        with _pcol1:
+            _nombre_p = st.text_input(
+                "Nombre", value=_perfil.get("nombre", ""),
+                placeholder="Juan", key="perfil_nombre",
+            )
+        with _pcol2:
+            _apellido_p = st.text_input(
+                "Apellido", value=_perfil.get("apellido", ""),
+                placeholder="García", key="perfil_apellido",
+            )
         _tipo_opciones = [
             "", "Particular", "Uber Eats", "DiDi Food", "Rappi",
             "Didi", "Uber", "Cabify", "Domino's", "Burger King",
@@ -1521,17 +1590,31 @@ with st.sidebar:
             "Género (opcional)", _genero_opciones,
             index=_genero_idx, key="perfil_genero",
         )
-        _edad = st.number_input(
-            "Edad (opcional)", min_value=0, max_value=99,
-            value=int(_perfil.get("edad") or 0), step=1, key="perfil_edad",
+        import datetime as _dt_perfil
+        _fnac_raw = _perfil.get("fecha_nacimiento")
+        _fnac_default = _dt_perfil.date(1990, 1, 1)
+        if _fnac_raw:
+            try:
+                _fnac_default = _dt_perfil.date.fromisoformat(_fnac_raw)
+            except Exception:
+                pass
+        _fecha_nac = st.date_input(
+            "Fecha de nacimiento (opcional)",
+            value=_fnac_default,
+            min_value=_dt_perfil.date(1924, 1, 1),
+            max_value=_dt_perfil.date.today(),
+            key="perfil_fnac",
+            format="DD/MM/YYYY",
         )
-        if st.button("💾 Guardar perfil", key="btn_guardar_perfil", use_container_width=True):
+        if st.button("Guardar perfil", key="btn_guardar_perfil", use_container_width=True):
             if _guardar_perfil:
                 _guardar_perfil({
-                    "tipo":          _tipo_usuario,
-                    "empresa_custom": _empresa_custom,
-                    "genero":        _genero,
-                    "edad":          int(_edad) if _edad > 0 else None,
+                    "nombre":           _nombre_p.strip(),
+                    "apellido":         _apellido_p.strip(),
+                    "tipo":             _tipo_usuario,
+                    "empresa_custom":   _empresa_custom,
+                    "genero":           _genero,
+                    "fecha_nacimiento": _fecha_nac.isoformat() if _fecha_nac else None,
                 })
                 st.success("✅ Perfil guardado")
 
@@ -2301,6 +2384,7 @@ with col_info:
             st.session_state.color_ruta          = AZUL_MARINO
             st.session_state.modo_click          = "A"
             st.session_state.ultimo_click        = None
+            st.session_state["_limpiar_sel"]     = True
             st.rerun()
 
 
