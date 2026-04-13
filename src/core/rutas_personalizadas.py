@@ -25,20 +25,28 @@ from typing import TypedDict
 # Tipos
 # ─────────────────────────────────────────────────────────────────────────────
 
-class PuntoRuta(TypedDict):
+class PuntoRuta(TypedDict, total=False):
     lat: float
     lon: float
     nombre: str
+    direccion: str
+    tipo: str  # "origen" | "destino" | "ambos"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Funciones CRUD
 # ─────────────────────────────────────────────────────────────────────────────
 
-def agregar_ruta(nombre: str, lat: float, lon: float, store: list[PuntoRuta]) -> PuntoRuta:
+def agregar_ruta(
+    nombre: str,
+    lat: float,
+    lon: float,
+    store: list[PuntoRuta],
+    direccion: str = "",
+    tipo: str = "ambos",
+) -> PuntoRuta:
     """
     Agrega un punto con nombre a la lista ``store`` y lo devuelve.
-
     Si ya existe un punto con el mismo nombre (case-insensitive), lo sobreescribe.
 
     Parámetros
@@ -52,13 +60,34 @@ def agregar_ruta(nombre: str, lat: float, lon: float, store: list[PuntoRuta]) ->
     store : list
         Lista mutable donde se almacena el punto (normalmente
         ``st.session_state.rutas_guardadas``).
+    direccion : str, opcional
+        Dirección o referencia textual. Default cadena vacía.
+    tipo : str, opcional
+        Clasificación de uso del lugar: ``"origen"``, ``"destino"`` o
+        ``"ambos"``. Default ``"ambos"``.
 
     Devuelve
     --------
     PuntoRuta
         El punto creado/actualizado.
+
+    Lanza
+    -----
+    ValueError
+        Si ``tipo`` no es uno de los valores válidos.
     """
-    punto: PuntoRuta = {"lat": lat, "lon": lon, "nombre": nombre.strip()}
+    tipo_norm = tipo.lower().strip()
+    if tipo_norm not in ("origen", "destino", "ambos"):
+        raise ValueError(
+            f"Tipo inválido: {tipo!r}. Usa 'origen', 'destino' o 'ambos'."
+        )
+    punto: PuntoRuta = {
+        "lat": lat,
+        "lon": lon,
+        "nombre": nombre.strip(),
+        "direccion": (direccion or "").strip(),
+        "tipo": tipo_norm,
+    }
     for i, p in enumerate(store):
         if p["nombre"].lower() == nombre.strip().lower():
             store[i] = punto

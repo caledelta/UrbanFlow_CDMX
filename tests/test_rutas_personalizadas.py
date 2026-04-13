@@ -180,3 +180,48 @@ class TestBuscarLugar:
         store: list = []
         result = cargar_ruta("LugarQueNoExiste12345", store)
         assert result is None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Tests adicionales — íconos
+# ─────────────────────────────────────────────────────────────────────────────
+
+def test_agregar_ruta_con_tipo_origen():
+    from src.core.rutas_personalizadas import agregar_ruta
+    store = []
+    p = agregar_ruta("Casa", 19.43, -99.19, store, direccion="Polanco", tipo="origen")
+    assert p["tipo"] == "origen"
+    assert p["direccion"] == "Polanco"
+    assert p["nombre"] == "Casa"
+
+
+def test_agregar_ruta_default_ambos_sin_direccion():
+    from src.core.rutas_personalizadas import agregar_ruta
+    store = []
+    p = agregar_ruta("Trabajo", 19.43, -99.19, store)
+    assert p["tipo"] == "ambos"
+    assert p["direccion"] == ""
+
+
+def test_agregar_ruta_tipo_invalido_lanza():
+    from src.core.rutas_personalizadas import agregar_ruta
+    import pytest
+    with pytest.raises(ValueError, match="Tipo inválido"):
+        agregar_ruta("X", 19.0, -99.0, [], tipo="cualquier_cosa")
+
+
+def test_agregar_ruta_sobrescribe_preserva_comportamiento_original():
+    """La función original sobrescribe por nombre case-insensitive."""
+    from src.core.rutas_personalizadas import agregar_ruta
+    store = []
+    agregar_ruta("Casa", 19.43, -99.19, store, tipo="origen")
+    p2 = agregar_ruta("CASA", 20.0, -100.0, store, tipo="destino")
+    assert len(store) == 1, "Debe haber un solo registro tras sobrescribir"
+    assert p2["lat"] == 20.0
+    assert p2["tipo"] == "destino"
+
+
+def test_agregar_ruta_normaliza_tipo_con_espacios_y_mayusculas():
+    from src.core.rutas_personalizadas import agregar_ruta
+    p = agregar_ruta("Gym", 19.4, -99.1, [], tipo=" ORIGEN ")
+    assert p["tipo"] == "origen"
