@@ -41,7 +41,11 @@ def store_con_puntos() -> list[PuntoRuta]:
 class TestAgregarRuta:
     def test_agrega_punto_nuevo(self, store_vacio):
         punto = agregar_ruta("Casa", 19.4326, -99.1332, store_vacio)
-        assert punto == {"lat": 19.4326, "lon": -99.1332, "nombre": "Casa"}
+        assert punto["lat"] == 19.4326
+        assert punto["lon"] == -99.1332
+        assert punto["nombre"] == "Casa"
+        assert punto["tipo"] == "ambos"
+        assert punto["direccion"] == ""
         assert len(store_vacio) == 1
 
     def test_sobreescribe_nombre_existente(self, store_con_puntos):
