@@ -129,6 +129,43 @@ except ImportError:
     RUTAS_PERSONALIZADAS_OK = False
 
 
+def _construir_contexto_lugares(rutas_guardadas: list) -> str:
+    """
+    Construye un prefijo textual con los lugares guardados del usuario
+    para inyectarlo en el prompt del agente VialAI. Vacío si no hay
+    lugares guardados. Evita que el agente intente llamar a la tool
+    usar_ruta_personalizada sin el store correcto.
+    """
+    if not rutas_guardadas:
+        return ""
+    lineas = ["[Contexto: lugares guardados por el usuario]"]
+    for lugar in rutas_guardadas:
+        nombre = lugar.get("nombre", "")
+        lat = lugar.get("lat")
+        lon = lugar.get("lon")
+        direccion = lugar.get("direccion", "")
+        tipo = lugar.get("tipo", "ambos")
+        if not (nombre and lat is not None and lon is not None):
+            continue
+        extras = []
+        if direccion:
+            extras.append(f"dirección: {direccion}")
+        if tipo and tipo != "ambos":
+            extras.append(f"suele ser {tipo}")
+        extras_str = f" ({', '.join(extras)})" if extras else ""
+        lineas.append(
+            f"- {nombre}: lat={lat:.4f}, lon={lon:.4f}{extras_str}"
+        )
+    if len(lineas) == 1:
+        return ""  # Solo el header, sin lugares válidos
+    lineas.append(
+        "[Fin del contexto. Usa estas coordenadas directamente si el "
+        "usuario menciona uno de estos nombres. No es necesario llamar "
+        "a usar_ruta_personalizada para estos lugares.]"
+    )
+    return "\n".join(lineas) + "\n\n"
+
+
 # ════════════════════════════════════════════════════════════════════════════
 # UTILIDADES GENERALES
 # ════════════════════════════════════════════════════════════════════════════
@@ -1814,7 +1851,12 @@ with st.sidebar:
             if VIALAI_OK:
                 try:
                     _vialai = VialAIAgent()
-                    _respuesta = _vialai.run(_prompt_final, historial=_historial_api)
+                    # Inyectar contexto de lugares guardados al prompt del usuario
+                    _contexto_lugares = _construir_contexto_lugares(
+                        st.session_state.get("rutas_guardadas", [])
+                    )
+                    _prompt_con_contexto = _contexto_lugares + _prompt_final
+                    _respuesta = _vialai.run(_prompt_con_contexto, historial=_historial_api)
                 except Exception as _exc:
                     st.error(f"Error al inicializar el agente: {_exc}")
                     _respuesta = f"⚠️ Error al inicializar el agente: {_exc}"
