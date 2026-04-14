@@ -900,6 +900,14 @@ div[data-testid="stSidebar"] .stCaption,
 div[data-testid="stSidebar"] small {{
     color: #B0C4DE !important;
 }}
+
+/* ── Textos secundarios del chat: mejor contraste sobre fondo oscuro ──── */
+[data-testid="stChatMessage"] small,
+[data-testid="stChatMessage"] [style*="#9CA3AF"],
+[data-testid="stChatMessage"] [style*="#8B95A7"],
+[data-testid="stChatMessage"] [style*="#6B7280"] {{
+    color: #B8D4EA !important;
+}}
 </style>
 """
 
@@ -1096,11 +1104,27 @@ with st.sidebar:
                 "ts":        _dt_fin.isoformat(),
             }
             st.session_state.feedback_historial.append(_registro)
-            st.session_state.viaje_activo  = False
-            st.session_state.viaje_inicio  = None
-            st.session_state.viaje_p50     = None
-            st.session_state.viaje_origen  = None
-            st.session_state.viaje_destino = None
+            _exactitud_llegue = (
+                "exacto" if abs(_error_pct) <= 10
+                else "cerca" if abs(_error_pct) <= 25
+                else "lejos"
+            )
+            try:
+                from src.core.telemetria import registrar_feedback as _reg_fb_llegue
+                _reg_fb_llegue(
+                    rating=None,
+                    exactitud=_exactitud_llegue,
+                    tiempo_real_min=_real_min,
+                    tiempo_predicho_min=_p50,
+                )
+            except Exception:
+                pass
+            st.session_state.viaje_activo            = False
+            st.session_state.viaje_inicio            = None
+            st.session_state.viaje_p50               = None
+            st.session_state.viaje_origen            = None
+            st.session_state.viaje_destino           = None
+            st.session_state.viaje_recien_completado = True
             # Mensaje de feedback personalizado
             if abs(_error_pct) <= 10:
                 st.toast(f"🎯 ¡Predicción exacta! Real: {_real_min} min (P50 era {_p50} min)")
@@ -1636,6 +1660,31 @@ with st.sidebar:
                 st.markdown(f"- {_ruta_stat} · **{_n_stat} veces**")
         else:
             st.caption("Aún no has hecho consultas.")
+        # Historial de viajes con comparación real vs predicho
+        try:
+            from src.core.telemetria import obtener_historial_viajes as _get_hv
+            _viajes = _get_hv()
+        except Exception:
+            _viajes = []
+        if _viajes:
+            st.markdown("---")
+            st.markdown("**⏱️ Últimos viajes (real vs predicción):**")
+            for _v in reversed(_viajes):  # más reciente primero
+                _icono = {"exacto": "🎯", "cerca": "✅", "lejos": "⚠️"}.get(
+                    _v.get("exactitud"), "•"
+                )
+                _real = _v.get("real", 0)
+                _pred = _v.get("predicho", 0) or 0
+                _diff = _real - _pred
+                _signo = "+" if _diff >= 0 else ""
+                st.markdown(
+                    f"<div style='font-size:0.8rem;color:#B8D4EA;padding:2px 0;'>"
+                    f"{_icono} Real: <b>{_real:.1f} min</b> · "
+                    f"Predicho: {_pred:.1f} min · "
+                    f"Δ: <span style='color:#E8C547;'>{_signo}{_diff:.1f} min</span>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
 
     # ── Chat VialAI ──────────────────────────────────────────────────────────
     st.markdown(
@@ -2463,14 +2512,6 @@ if predecir and corredor_activo:
         _progress.empty()
         raise
 
-    # ── Activar viaje para feedback real vs predicho ─────────────────────────
-    import datetime as _dt_viaje
-    st.session_state.viaje_activo  = True
-    st.session_state.viaje_inicio  = _dt_viaje.datetime.now()
-    st.session_state.viaje_p50     = res["p50"]
-    st.session_state.viaje_origen  = origen_activo["nombre"] if origen_activo else "?"
-    st.session_state.viaje_destino = destino_activo["nombre"] if destino_activo else "?"
-
     _NOMBRES_ESTADO = {0: "Fluido", 1: "Lento", 2: "Congestionado"}
     estado_nombre   = _NOMBRES_ESTADO[res["estado_inicial"]]
     nivel, color_nivel, etiq_nivel = _nivel_riesgo(res["estado_inicial"], res["p90"], res["p50"])
@@ -2828,29 +2869,52 @@ if predecir and corredor_activo:
     except Exception:
         pass
 
-    # ── Feedback post-predicción ─────────────────────────────────────────────
-    st.markdown("#### ⭐ ¿Qué tal la predicción?")
-    _col_fb1, _col_fb2 = st.columns([3, 1])
-    with _col_fb1:
-        _rating = st.feedback(
-            "stars",
-            key=f"rating_{origen_label}_{destino_label}",
-        )
-    with _col_fb2:
-        if st.button("Calificar después", key="rating_later"):
+    # ── Botón "Iniciar viaje" — aparece inmediatamente tras la predicción ────
+    if not st.session_state.viaje_activo:
+        st.markdown("---")
+        if st.button(
+            "🍄 ¡Iniciar viaje!",
+            key="btn_iniciar_viaje",
+            use_container_width=True,
+            type="primary",
+        ):
+            import datetime as _dt_viaje
+            st.session_state.viaje_activo  = True
+            st.session_state.viaje_inicio  = _dt_viaje.datetime.now()
+            st.session_state.viaje_p50     = res["p50"]
+            st.session_state.viaje_origen  = origen_label
+            st.session_state.viaje_destino = destino_label
+            st.rerun()
+
+    # ── Feedback post-predicción (solo tras completar el viaje) ──────────────
+    if st.session_state.get("viaje_recien_completado", False):
+        st.markdown("---")
+        st.markdown("#### ⭐ ¿Qué tal la predicción?")
+        _col_fb1, _col_fb2 = st.columns([3, 1])
+        with _col_fb1:
+            _rating = st.feedback(
+                "stars",
+                key=f"rating_{origen_label}_{destino_label}",
+            )
+        with _col_fb2:
+            if st.button("Calificar después", key="rating_later"):
+                try:
+                    from src.core.telemetria import registrar_feedback as _reg_fb
+                    _reg_fb(rating=None)
+                except Exception:
+                    pass
+                st.session_state.viaje_recien_completado = False
+                st.toast("Entendido, te preguntaremos luego 👍")
+                st.rerun()
+        if _rating is not None:
             try:
                 from src.core.telemetria import registrar_feedback as _reg_fb
-                _reg_fb(rating=None)
+                _reg_fb(rating=_rating + 1)
             except Exception:
                 pass
-            st.toast("Entendido, te preguntaremos luego 👍")
-    if _rating is not None:
-        try:
-            from src.core.telemetria import registrar_feedback as _reg_fb
-            _reg_fb(rating=_rating + 1)
-        except Exception:
-            pass
-        st.toast(f"¡Gracias por tus {_rating + 1} ⭐!")
+            st.session_state.viaje_recien_completado = False
+            st.toast(f"¡Gracias por tus {_rating + 1} ⭐!")
+            st.rerun()
 
     with st.expander("🔬 Detalles técnicos de la simulación", expanded=False):
         col_d1, col_d2 = st.columns(2)

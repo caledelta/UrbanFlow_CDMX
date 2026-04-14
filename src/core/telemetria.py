@@ -129,3 +129,33 @@ def registrar_feedback(
         "tiempo_real_min":     tiempo_real_min,
         "tiempo_predicho_min": tiempo_predicho_min,
     })
+
+
+def obtener_historial_viajes() -> list[dict]:
+    """
+    Retorna lista de viajes completados con comparación
+    tiempo real vs predicho. Lee de eventos.jsonl filtrando
+    por tipo='feedback' y con tiempo_real_min != None.
+    """
+    import logging
+    if not EVENTS_FILE.exists():
+        return []
+    viajes = []
+    try:
+        for linea in EVENTS_FILE.read_text(encoding="utf-8").splitlines():
+            if not linea.strip():
+                continue
+            try:
+                ev = json.loads(linea)
+            except json.JSONDecodeError:
+                continue
+            if ev.get("tipo") == "feedback" and ev.get("tiempo_real_min") is not None:
+                viajes.append({
+                    "ts":       ev.get("ts", ""),
+                    "real":     ev.get("tiempo_real_min"),
+                    "predicho": ev.get("tiempo_predicho_min"),
+                    "exactitud": ev.get("exactitud"),
+                })
+    except Exception as e:
+        logging.getLogger("vialai").warning("Error leyendo historial: %s", e)
+    return viajes[-10:]  # últimos 10
