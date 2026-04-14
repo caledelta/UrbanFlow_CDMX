@@ -2595,6 +2595,11 @@ if predecir and corredor_activo:
 
     origen_label  = origen_activo["nombre"] if origen_activo else "?"
     destino_label = destino_activo["nombre"] if destino_activo else "?"
+    # Persistir datos de la predicción para que "Iniciar viaje" funcione
+    # incluso en reruns donde predecir=False (fix bug 16-F).
+    st.session_state.last_pred_p50     = res["p50"]
+    st.session_state.last_pred_origen  = origen_label
+    st.session_state.last_pred_destino = destino_label
     _fuente_ruta  = corredor_activo.get("fuente_ruta", "haversine_estimada")
     _icono_ruta   = "🛣️" if _fuente_ruta == "tomtom" else "📐"
     _tip_ruta     = ("ruta real TomTom" if _fuente_ruta == "tomtom" else "estimación Haversine×1.4")
@@ -2946,22 +2951,6 @@ if predecir and corredor_activo:
     except Exception:
         pass
 
-    # ── Botón "Iniciar viaje" — aparece inmediatamente tras la predicción ────
-    if not st.session_state.viaje_activo:
-        st.markdown("---")
-        if st.button(
-            "🍄 ¡Iniciar viaje!",
-            key="btn_iniciar_viaje",
-            use_container_width=True,
-            type="primary",
-        ):
-            import datetime as _dt_viaje
-            st.session_state.viaje_activo  = True
-            st.session_state.viaje_inicio  = _dt_viaje.datetime.now()
-            st.session_state.viaje_p50     = res["p50"]
-            st.session_state.viaje_origen  = origen_label
-            st.session_state.viaje_destino = destino_label
-            st.rerun()
 
     # ── Feedback post-predicción (solo tras completar el viaje) ──────────────
     if st.session_state.get("viaje_recien_completado", False):
@@ -3040,6 +3029,27 @@ if predecir and corredor_activo:
                 """,
                 unsafe_allow_html=True,
             )
+
+# ── Botón "Iniciar viaje" — fuera del bloque if predecir (fix bug 16-F) ────
+# Persiste entre reruns usando last_pred_* guardado en session_state.
+if (
+    st.session_state.get("last_pred_p50") is not None
+    and not st.session_state.viaje_activo
+):
+    st.markdown("---")
+    if st.button(
+        "🍄 ¡Iniciar viaje!",
+        key="btn_iniciar_viaje",
+        use_container_width=True,
+        type="primary",
+    ):
+        import datetime as _dt_viaje
+        st.session_state.viaje_activo  = True
+        st.session_state.viaje_inicio  = _dt_viaje.datetime.now()
+        st.session_state.viaje_p50     = st.session_state.last_pred_p50
+        st.session_state.viaje_origen  = st.session_state.last_pred_origen
+        st.session_state.viaje_destino = st.session_state.last_pred_destino
+        st.rerun()
 
 elif not (origen_activo and destino_activo):
     st.markdown("""
