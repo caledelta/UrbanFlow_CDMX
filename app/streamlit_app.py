@@ -2311,6 +2311,41 @@ def render_mapa_od(
             tooltip=f"Destino: {destino['nombre']}",
         ).add_to(m)
 
+    # ── Marcadores de lugares guardados con iconos contextuales (bloque 16-D)
+    try:
+        from src.core.iconos_mapa import icono_para_lugar
+        _lugares_mapa = st.session_state.get("rutas_guardadas", [])
+        for _lugar_m in _lugares_mapa:
+            _lat_m = _lugar_m.get("lat")
+            _lon_m = _lugar_m.get("lon")
+            _nombre_m = _lugar_m.get("nombre", "")
+            if _lat_m is None or _lon_m is None or not _nombre_m:
+                continue
+            _info_icono = icono_para_lugar(
+                _nombre_m, _lugar_m.get("direccion", "")
+            )
+            _dir_m = _lugar_m.get("direccion", "")
+            _tipo_m = _lugar_m.get("tipo", "ambos")
+            _tooltip_html = (
+                f"<b>{_info_icono['emoji']} {_nombre_m}</b><br>"
+                f"<small style='color:#555;'>{_dir_m}</small><br>"
+                f"<small style='color:#888;'>({_tipo_m})</small>"
+            )
+            folium.Marker(
+                location=[_lat_m, _lon_m],
+                tooltip=folium.Tooltip(_tooltip_html, sticky=False),
+                icon=folium.Icon(
+                    icon=_info_icono["folium_icon"],
+                    color=_info_icono["folium_color"],
+                    prefix="fa",
+                ),
+            ).add_to(m)
+    except Exception as _e_mapa_lugares:
+        import logging
+        logging.getLogger("vialai").warning(
+            "No se pudieron renderizar marcadores de lugares: %s", _e_mapa_lugares
+        )
+
     modo        = st.session_state.modo_click
     color_modo  = VERDE if modo == "A" else ROJO
     letra_modo  = "A (Origen)" if modo == "A" else "B (Destino)"
