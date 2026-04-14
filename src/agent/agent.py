@@ -187,11 +187,28 @@ class VialAIAgent:
                 "No se pudo establecer conexión con el servicio. "
                 "Verifica tu conexión a internet e intenta de nuevo."
             )
-        except anthropic.APIStatusError as exc:
-            logger.error("Error de API (status %s): %s", exc.status_code, exc.message)
+        except Exception as e:
+            import logging
+            logging.getLogger("vialai.agent").error("Error en agente VialAI: %s", e, exc_info=True)
+            msg = str(e).lower()
+            if "credit balance" in msg or "insufficient" in msg or "quota" in msg:
+                return (
+                    "⚠️ Sin créditos en el servicio de IA. "
+                    "Por favor recarga en console.anthropic.com o contacta soporte."
+                )
+            if "rate_limit" in msg or "429" in msg:
+                return (
+                    "⚠️ Demasiadas consultas en poco tiempo. "
+                    "Espera unos segundos e intenta de nuevo."
+                )
+            if "timeout" in msg or "timed out" in msg:
+                return (
+                    "⚠️ La consulta tardó demasiado. "
+                    "Verifica tu conexión a internet e intenta de nuevo."
+                )
             return (
-                "El servicio devolvió un error inesperado. "
-                "Si el problema persiste, contacta al soporte de UrbanFlow CDMX."
+                f"⚠️ Error del servicio: {type(e).__name__}. "
+                "Si persiste, contacta soporte de UrbanFlow CDMX."
             )
         except Exception as exc:
             logger.error("Error inesperado en VialAIAgent.run: %s", exc, exc_info=True)
