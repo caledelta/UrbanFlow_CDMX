@@ -1,0 +1,569 @@
+\documentclass[11pt,a4paper]{article}
+
+% ============================================================
+%  Inventario_Proyecto.tex
+%  UrbanFlow CDMX - Inventario Completo del Proyecto
+%  Carlos Armando López Encino
+%  Diplomado en Ciencia de Datos - FES Acatlán - UNAM
+%  Abril 2026
+% ============================================================
+
+% --- Codificación e idioma ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[provide=*,main=spanish]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% --- Geometría ---
+\usepackage[a4paper,margin=2.5cm,headheight=14pt]{geometry}
+
+% --- Colores y cajas ---
+\usepackage{xcolor}
+\definecolor{navy}{RGB}{15,36,72}
+\definecolor{amber}{RGB}{212,149,35}
+\definecolor{lightgray}{RGB}{240,240,240}
+\definecolor{rulegray}{RGB}{180,180,180}
+
+% --- Tipografía de encabezados ---
+\usepackage{titlesec}
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{navy}}
+  {\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{navy!85!black}}
+  {\thesubsection}{1em}{}
+
+% --- Tablas ---
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% --- Listas ---
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.4em,itemsep=2pt,topsep=3pt}
+
+% --- Cabeceras y pies ---
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancyhead[L]{\small\color{navy}UrbanFlow CDMX \(|\) Inventario}
+\fancyhead[R]{\small\color{navy}Diplomado en Ciencia de Datos}
+\fancyfoot[C]{\thepage}
+
+% --- Hipervínculos ---
+\usepackage[hidelinks,colorlinks=true,linkcolor=navy,urlcolor=navy,citecolor=navy]{hyperref}
+
+% --- Símbolos matemáticos ---
+\usepackage{amsmath,amssymb}
+
+% --- Código fuente ---
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\small,
+  frame=single,
+  rulecolor=\color{rulegray},
+  backgroundcolor=\color{lightgray},
+  breaklines=true,
+  columns=fullflexible,
+  xleftmargin=0.5em,
+  xrightmargin=0.5em
+}
+
+% --- Espaciado ---
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+
+% ============================================================
+\begin{document}
+
+% ---------- Portada ----------
+\begin{titlepage}
+\centering
+\vspace*{3cm}
+
+{\color{navy}\rule{\textwidth}{1.2pt}}\\[0.8em]
+{\Huge\bfseries\color{navy} UrbanFlow CDMX}\\[0.5em]
+{\Large\color{navy} Inventario Completo del Proyecto}\\[0.3em]
+{\large\itshape\color{amber} Qué se hizo \(\cdot\) Con qué herramientas \(\cdot\) En qué orden}\\[0.3em]
+{\color{navy}\rule{\textwidth}{1.2pt}}\\[3cm]
+
+{\Large\bfseries Carlos Armando López Encino}\\[0.4em]
+{\large Diplomado en Ciencia de Datos}\\[0.2em]
+{\large FES Acatlán \(\cdot\) UNAM}\\[1.5cm]
+
+{\large Proyecto Integrador Final}\\[0.3em]
+{\large Abril 2026}
+
+\vfill
+\end{titlepage}
+
+% ---------- Propósito ----------
+\section*{Propósito de este documento}
+\addcontentsline{toc}{section}{Propósito de este documento}
+
+Este documento es un inventario exhaustivo de todo lo que se construyó durante el proyecto integrador del Diplomado en Ciencia de Datos: herramientas, bibliotecas, fuentes de datos, decisiones arquitectónicas, entregables y recursos consultados. Está organizado cronológicamente por fase de trabajo para que refleje el orden real en que fueron apareciendo las piezas del proyecto.
+
+No es un documento de marketing ni un pitch; es un registro técnico interno del esfuerzo realizado, útil para cualquier persona que quiera reproducir el trabajo, continuar el desarrollo, o simplemente entender el alcance del proyecto.
+
+\textit{Nota: las fechas exactas de cada fase están marcadas con \texttt{[POR CONFIRMAR]} en los lugares donde el autor debe completarlas antes de entregar este documento al profesor.}
+
+% ============================================================
+\section{Fase 0 --- Concepción y planteamiento \texttt{[POR CONFIRMAR: nov--dic 2025]}}
+
+\subsection{Definición del problema}
+\begin{itemize}
+  \item Identificación del tráfico en la ZMVM como problema no resuelto por sistemas de navegación convencionales
+  \item Revisión del TomTom Traffic Index 2024 y confirmación de que CDMX es la ciudad \#1 en congestión mundial
+  \item Definición del gap: Google Maps/Waze entregan estimaciones puntuales; ningún sistema entrega bandas de incertidumbre específicas del contexto mexicano
+\end{itemize}
+
+\subsection{Elección del enfoque metodológico}
+\begin{itemize}
+  \item Decisión de usar cadenas de Markov de tiempo discreto como modelo de dinámica de tráfico
+  \item Decisión de complementar con simulación Monte Carlo para cuantificar incertidumbre
+  \item Justificación académica: combina dos temas del diplomado (procesos estocásticos + métodos de simulación) en un problema realista
+\end{itemize}
+
+\subsection{Fuentes consultadas en la fase inicial}
+\begin{itemize}
+  \item TomTom Traffic Index 2024 --- \url{https://www.tomtom.com/traffic-index/}
+  \item INEGI --- Encuesta Origen-Destino en Hogares ZMVM 2017
+  \item DataMéxico (Secretaría de Economía) --- perfil económico de Valle de México
+  \item Mordor Intelligence --- Mexico Last Mile Delivery Market Report 2025--2030
+  \item Norris, J. R. (1997). \textit{Markov Chains}. Cambridge University Press
+  \item Rubinstein \& Kroese (2016). \textit{Simulation and the Monte Carlo Method}. Wiley
+\end{itemize}
+
+% ============================================================
+\section{Fase 1 --- Arquitectura del sistema \texttt{[POR CONFIRMAR: dic 2025]}}
+
+\subsection{Decisiones arquitectónicas principales}
+\begin{itemize}
+  \item Separación clara entre motor estocástico (Python puro vectorizado) y capa conversacional (agente LLM)
+  \item Estructura de directorios estilo \texttt{src/}:
+\end{itemize}
+
+\begin{lstlisting}
+UrbanFlow_CDMX/
+|-- src/
+|   |-- simulation/    (markov_chain.py, monte_carlo.py)
+|   |-- data_sources/  (tomtom_client.py, weather_client.py, c5_client.py)
+|   |-- agent/         (agent.py, perturbaciones.py, tools.py)
+|   +-- core/          (schemas.py Pydantic)
+|-- app/
+|   +-- streamlit_app.py
+|-- tests/             (pytest)
+|-- notebooks/         (EDA)
+|-- data/              (caches parquet)
++-- .env
+\end{lstlisting}
+
+\begin{itemize}
+  \item Elección de Anthropic API sobre OpenAI por mejor razonamiento sobre tablas probabilísticas
+  \item Elección de Streamlit sobre Gradio por integración más madura con Folium (mapas interactivos)
+\end{itemize}
+
+\subsection{Stack tecnológico inicial}
+\begin{center}
+\begin{tabularx}{\textwidth}{L{3.2cm} L{3.2cm} X}
+\toprule
+\textbf{Capa} & \textbf{Herramienta} & \textbf{Rol} \\
+\midrule
+Cómputo numérico      & NumPy 1.26      & Álgebra lineal vectorizada (Markov, Monte Carlo) \\
+Datos tabulares       & Pandas 2.2      & DataFrames de tráfico, clima, rutas de validación \\
+Geoespacial           & GeoPandas       & Proyección EPSG:6372 para cálculos de distancia \\
+Mapas                 & Folium          & Renderizado interactivo de rutas sobre tiles CDMX \\
+Validación esquemas   & Pydantic 2.x    & Structured outputs y contratos tipados \\
+Frontend              & Streamlit 1.56  & Dashboard interactivo con mapa + chat \\
+Agente LLM            & anthropic SDK   & Cliente Python para Claude API \\
+HTTP asíncrono        & httpx           & Llamadas concurrentes a APIs externas \\
+Testing               & pytest          & 443 tests automatizados \\
+Gestión deps          & pip-tools       & Lockfile reproducible en requirements.txt \\
+Entorno               & python-dotenv   & Carga de API keys desde .env \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+% ============================================================
+\section{Fase 2 --- Fuentes de datos e ingesta \texttt{[POR CONFIRMAR: ene 2026]}}
+
+\subsection{Cinco fuentes de datos integradas}
+\begin{center}
+\begin{tabularx}{\textwidth}{L{3.2cm} L{3cm} X}
+\toprule
+\textbf{Fuente} & \textbf{Tipo} & \textbf{Uso en el sistema} \\
+\midrule
+TomTom Traffic Stats API & REST, tiempo real & Velocidad actual y de flujo libre por coordenada. Inferencia del estado inicial $s_0$ de la cadena de Markov. Cuota gratuita: 2{,}500 req/día. \\
+TomTom Routing API       & REST, por consulta & Distancia real por carretera y geometría de ruta (polilínea). Ground truth para validación empírica. \\
+OpenWeatherMap API       & REST, cada 10 min  & Temperatura, precipitación, condición climática. Factor $\phi$ sobre velocidades. Cuota gratuita: 1{,}000 req/día. \\
+C5 CDMX Histórico        & CSV desde portal CKAN & Serie histórica de incidentes viales 2018--2024 ($\sim$1M registros). Calibración de la matriz de transición $\hat{P}$ y densidad horaria. \\
+Google Maps Distance Matrix & REST, por consulta & Validación cruzada del ETA, geocodificación de direcciones del usuario. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Portal de datos abiertos CDMX}
+\begin{itemize}
+  \item \url{https://datos.cdmx.gob.mx/dataset/incidentes-viales-c5} --- dataset C5 principal
+  \item CKAN API: \url{https://datos.cdmx.gob.mx/api/3/action/package_show}
+\end{itemize}
+
+\subsection{Módulos de cliente implementados}
+\begin{itemize}
+  \item \texttt{src/data\_sources/tomtom\_client.py} --- wrapper de las dos APIs de TomTom
+  \item \texttt{src/data\_sources/weather\_client.py} --- cliente OpenWeatherMap con mapeo de condiciones climáticas a factor $\phi$
+  \item \texttt{src/data\_sources/c5\_client.py} --- descarga y limpieza del CSV histórico de C5 CDMX
+  \item \texttt{src/data\_sources/gmaps\_client.py} --- geocodificación y Distance Matrix
+\end{itemize}
+
+\subsection{Retos encontrados y cómo se resolvieron}
+\begin{itemize}
+  \item \textbf{Cuotas API limitadas:} Se implementó un sistema de caché local con \texttt{requests-cache} para evitar llamadas repetidas durante desarrollo
+  \item \textbf{Indisponibilidad ocasional de TomTom Routing:} Se implementó el fallback empírico $d_{\text{carretera}} \approx d_{\text{haversine}} \times 1.4$, calibrado sobre 500 pares O-D aleatorios
+  \item \textbf{Nombres de columnas distintos por año en C5:} Se creó un mapeo \texttt{MAPEO\_COLUMNAS} que normaliza nombres a un esquema único
+\end{itemize}
+
+% ============================================================
+\section{Fase 3 --- Análisis exploratorio de datos \texttt{[POR CONFIRMAR: ene--feb 2026]}}
+
+\subsection{Notebook EDA v3}
+Archivo: \texttt{notebooks/EDA\_UrbanFlow\_CDMX\_v3.ipynb}
+\begin{itemize}
+  \item Limpieza y tipado de $\sim$1 millón de registros del C5 CDMX
+  \item Análisis de valores faltantes con umbrales de 5\,\% y 10\,\%
+  \item Distribución geográfica (hexbin map) de incidentes sobre el bounding box ZMVM
+  \item Distribución temporal: hora del día, día de la semana, mes, heatmap hora$\times$día
+  \item Identificación de los dos picos diarios: matutino 7--9\,h y vespertino 17--20\,h
+  \item Top alcaldías por incidentes: Iztapalapa, Cuauhtémoc, Gustavo A. Madero
+  \item Proxy de congestión por densidad horaria normalizada a $[0.35, 1.0]$
+\end{itemize}
+
+\subsection{Bibliotecas adicionales de visualización}
+\begin{itemize}
+  \item \texttt{matplotlib} --- gráficos base
+  \item \texttt{seaborn} --- heatmaps y estilos
+  \item \texttt{scipy.stats} --- distribuciones y tests
+\end{itemize}
+
+% ============================================================
+\section{Fase 4 --- Motor estocástico (Markov + Monte Carlo) \texttt{[POR CONFIRMAR: feb 2026]}}
+
+\subsection{Clase \texttt{MarkovTrafficChain}}
+Archivo: \texttt{src/simulation/markov\_chain.py}
+\begin{itemize}
+  \item Interfaz estilo scikit-learn: \texttt{fit()} $\rightarrow$ \texttt{predict\_distribution()} $\rightarrow$ \texttt{simulate()}
+  \item Estimación MLE con suavizado de Laplace ($\varepsilon = 10^{-6}$) para evitar probabilidades cero
+  \item Cálculo del estado estacionario $\pi^{*}$ vía descomposición espectral de $P^{\top}$
+  \item Soporte para 3 estados: Fluido / Lento / Congestionado
+  \item Matriz calibrada para el corredor Insurgentes Sur en pico AM
+\end{itemize}
+
+\subsection{Clase \texttt{MonteCarloEngine}}
+Archivo: \texttt{src/simulation/monte\_carlo.py}
+\begin{itemize}
+  \item Simulación vectorizada sobre $N$ trayectorias (10{,}000 por defecto)
+  \item Método de la transformada inversa vectorizada para muestrear estados de Markov en paralelo
+  \item Muestreo de velocidades por estado usando Normal truncada
+  \item Interpolación lineal sub-paso para precisión de tiempo de llegada
+  \item Cálculo de percentiles $P_{10}$, $P_{50}$, $P_{90}$ y métrica derivada IC
+  \item Latencia: $<$500\,ms por consulta en CPU sin GPU
+\end{itemize}
+
+\subsection{Retos técnicos}
+\begin{itemize}
+  \item \textbf{Vectorización:} la versión naive con bucles Python tomaba $\sim$30 segundos por consulta. La vectorización por transformada inversa la redujo a $<$500\,ms (60$\times$ mejora)
+  \item \textbf{Estabilidad numérica:} se agregó normalización después de cada operación sobre la matriz para evitar derivas acumuladas
+\end{itemize}
+
+\subsection{Cobertura de tests}
+\begin{itemize}
+  \item \texttt{tests/test\_markov\_chain.py} --- propiedades de estocasticidad, convergencia estacionaria, predicción en $k$ pasos
+  \item \texttt{tests/test\_monte\_carlo.py} --- convergencia del estimador, reproducibilidad con seed, rangos de bandas
+  \item \texttt{tests/test\_pipeline.py} --- integración end-to-end desde ratio de congestión hasta bandas $P_{10}/P_{50}/P_{90}$
+  \item \textbf{Total: 443 tests pasando al 100\,\%}
+\end{itemize}
+
+% ============================================================
+\section{Fase 5 --- Catálogo de perturbaciones contextuales \texttt{[POR CONFIRMAR: feb--mar 2026]}}
+
+\subsection{Motivación}
+TomTom y OpenWeatherMap no pueden capturar eventos como cierres del Metro, manifestaciones o eventos masivos hasta que ya pasaron. Se construyó un catálogo de perturbaciones que modifica la matriz de Markov \textit{antes} de ejecutar la simulación.
+
+\subsection{Formulación matemática}
+Función de perturbación por factor multiplicativo:
+\[
+p'_{i,2} = \min(f \cdot p_{i,2},\ p_{\max}), \qquad p_{\max} = 0.92
+\]
+con renormalización automática de la fila para preservar estocasticidad.
+
+\subsection{Catálogo implementado}
+Archivo: \texttt{src/agent/perturbaciones.py}
+\begin{itemize}
+  \item \textbf{Infraestructura:} Cierre Línea 1 Metro ($f = 1.25$), Cierre Línea 12 Metro ($f = 1.20$)
+  \item \textbf{Eventos masivos:} Concierto en Centro Banamex ($f = 1.15$), Partido en Estadio Azteca ($f = 1.22$), Concierto en Foro Sol ($f = 1.20$)
+  \item \textbf{Manifestaciones:} Marcha 9 de marzo ($f = 1.30$), Marcha magisterial CNTE ($f = 1.27$)
+  \item \textbf{Festivos alto impacto:} 15 de septiembre --- Grito ($f = 1.35$), 16 de septiembre --- Desfile ($f = 1.30$)
+  \item \textbf{Festivos bajo impacto:} Navidad / Año Nuevo ($f = 0.55$)
+\end{itemize}
+\textbf{Total: 11 eventos} calibrados empíricamente contra datos históricos del C5 CDMX.
+
+% ============================================================
+\section{Fase 6 --- Agente conversacional VialAI \texttt{[POR CONFIRMAR: mar 2026]}}
+
+\subsection{Arquitectura del agente}
+\begin{itemize}
+  \item Patrón \textit{tool use loop} estándar de la API de Anthropic
+  \item Modelo: \texttt{claude-sonnet-4-5} (o versión disponible en el momento)
+  \item Integración con Streamlit via \texttt{st.session\_state} para mantener historial
+\end{itemize}
+
+\subsection{Structured Outputs con Pydantic}
+Archivo: \texttt{src/core/schemas.py}
+\begin{itemize}
+  \item \texttt{RespuestaTomTom} --- valida respuesta de TomTom Traffic Stats
+  \item \texttt{RespuestaClima} --- valida respuesta de OpenWeatherMap
+  \item \texttt{PrediccionViaje} --- resultado estructurado del motor ($P_{10}/P_{50}/P_{90}$, IC, semáforo)
+  \item \texttt{PerturbacionActiva} --- evento contextual con tipo, radio, duración
+\end{itemize}
+
+\subsection{Tres herramientas expuestas al agente}
+\begin{itemize}
+  \item \texttt{predecir\_tiempo\_viaje(origen, destino, hora)} $\rightarrow$ \texttt{PrediccionViaje}
+  \item \texttt{consultar\_trafico\_ahora(zona)} $\rightarrow$ Estado actual + ratio de congestión
+  \item \texttt{verificar\_perturbaciones(zona, hora)} $\rightarrow$ Lista de \texttt{PerturbacionActiva}
+\end{itemize}
+
+\subsection{Reto: Bug de carga de \texttt{.env}}
+\begin{itemize}
+  \item \textbf{Síntoma:} \texttt{ANTHROPIC\_API\_KEY} no cargaba cuando Streamlit instanciaba el agente
+  \item \textbf{Causa:} \texttt{load\_dotenv()} sin argumentos usa \texttt{cwd} como referencia, pero Streamlit corre desde un directorio distinto al del módulo
+  \item \textbf{Solución:} ruta absoluta derivada del propio archivo vía \texttt{Path(\_\_file\_\_).resolve().parents[2]}
+\end{itemize}
+
+% ============================================================
+\section{Fase 7 --- Interfaz Streamlit \texttt{[POR CONFIRMAR: mar 2026]}}
+
+\subsection{Componentes de la UI}
+\begin{itemize}
+  \item Mapa interactivo Folium con selección de origen/destino por click
+  \item Widget de clima en tiempo real desde OpenWeatherMap
+  \item Gauge del Índice de Confiabilidad con semáforo verde/amarillo/rojo
+  \item Histograma de la distribución Monte Carlo
+  \item Sidebar con chat de VialAI
+  \item Toggles para activar perturbaciones del catálogo
+\end{itemize}
+
+\subsection{Archivo principal}
+\texttt{app/streamlit\_app.py}
+
+\subsection{Dependencias adicionales}
+\begin{itemize}
+  \item \texttt{streamlit-folium} --- integración mapa-Streamlit
+  \item \texttt{plotly} --- gauges interactivos del IC
+\end{itemize}
+
+% ============================================================
+\section{Fase 8 --- Validación empírica \texttt{[POR CONFIRMAR: mar 2026]}}
+
+\subsection{Dataset de validación}
+30 rutas representativas muestreadas entre 9 polos de actividad de la ZMVM: Polanco, Santa Fe, Reforma, Roma-Condesa, Insurgentes Sur, Coyoacán, Aeropuerto, Centro Histórico, Naucalpan.
+
+\subsection{Métricas reportadas}
+\begin{itemize}
+  \item \textbf{MAPE del $P_{50}$ (VialAI): 11.9\,\%} --- bajo el umbral objetivo del 15\,\%
+  \item MAPE del ETA (TomTom Routing): 19.0\,\% --- baseline competitivo
+  \item \textbf{VialAI supera a TomTom por 7.1 puntos porcentuales}
+  \item Cobertura empírica de la banda $P_{10}$--$P_{90}$: 93.3\,\% (nominal 80\,\%)
+  \item MAE del $P_{50}$: 4.8 minutos
+\end{itemize}
+
+\subsection{Casos testigo}
+\begin{itemize}
+  \item \textbf{Caso ganado:} Polanco $\rightarrow$ Aeropuerto (08:15). TomTom ETA: 38\,min. VialAI $P_{50}$: 40\,min. Real: 47\,min (dentro de $P_{90}$). TomTom habría subestimado en 9 minutos.
+  \item \textbf{Caso perdido:} Coyoacán $\rightarrow$ Santa Fe (09:30). Real: 95\,min debido a manifestación no anunciada. Fuera de la banda $P_{90}$ de VialAI. Este caso motivó la construcción del catálogo de perturbaciones.
+\end{itemize}
+
+% ============================================================
+\section{Fase 9 --- Documentación final \texttt{[abril 2026]}}
+
+\subsection{Artículo técnico}
+\begin{itemize}
+  \item Archivo: \texttt{UrbanFlow\_CDMX\_Articulo\_v2.pdf} (23 páginas)
+  \item Fuente: \LaTeX{} con \texttt{tcolorbox}, \texttt{TikZ}, \texttt{listings}, \texttt{microtype}
+  \item 12 secciones: motivación, arquitectura, datos, Markov, Monte Carlo, perturbaciones, agente, validación, estrategia B2B, conclusiones
+  \item 4 \textit{challengebox} documentando retos técnicos reales
+  \item 4 \textit{insightbox} con hallazgos vendibles
+  \item 17 referencias bibliográficas reales
+\end{itemize}
+
+\subsection{Notebook Colab reproducible}
+\begin{itemize}
+  \item Archivo: \texttt{UrbanFlow\_CDMX\_Colab.ipynb} (38 celdas)
+  \item Datos cacheados inline: matriz de transición + 30 rutas de validación
+  \item Corre en Google Colab sin credenciales ni dependencias externas
+  \item Reproduce los resultados de validación reportados en el artículo
+\end{itemize}
+
+\subsection{Presentación ejecutiva}
+\begin{itemize}
+  \item Archivo: \texttt{UrbanFlow\_CDMX\_Presentacion.pptx} (16 slides)
+  \item Generada con \texttt{pptxgenjs} (Node.js) + iconos de \texttt{react-icons}
+  \item Paleta \textit{Midnight Executive} (navy + ámbar)
+  \item Estructura narrativa: portada $\rightarrow$ problema $\rightarrow$ metodología $\rightarrow$ demo $\rightarrow$ validación $\rightarrow$ estrategia $\rightarrow$ cierre
+\end{itemize}
+
+\subsection{Documentos complementarios}
+\begin{itemize}
+  \item \texttt{VialAI\_Pitch\_B2B.pdf} --- one-pager ejecutivo de 4 páginas para logística B2B
+  \item \texttt{guion\_video.md} --- guion del video de 5 minutos con timestamps
+  \item \texttt{checklist\_demo.md} --- checklist operativo para la demo en vivo
+\end{itemize}
+
+% ============================================================
+\section{Herramientas, bibliotecas y recursos utilizados}
+
+\subsection{Lenguajes de programación}
+\begin{itemize}
+  \item \textbf{Python 3.14} --- lenguaje principal del motor, agente y pipeline
+  \item \textbf{JavaScript (Node.js 22)} --- generación de la presentación con \texttt{pptxgenjs}
+  \item \textbf{\LaTeX} --- artículo, pitch B2B e inventario
+  \item \textbf{Markdown} --- guion de video, checklist de demo, README
+  \item \textbf{Bash / PowerShell} --- scripts de automatización
+\end{itemize}
+
+\subsection{Bibliotecas Python (\texttt{requirements.txt})}
+\begin{center}
+\begin{tabularx}{\textwidth}{L{3.2cm} L{2cm} X}
+\toprule
+\textbf{Biblioteca} & \textbf{Versión} & \textbf{Uso} \\
+\midrule
+numpy            & 1.26+ & Álgebra lineal vectorizada \\
+pandas           & 2.2+  & DataFrames \\
+scipy            & 1.11+ & Distribuciones, tests estadísticos \\
+scikit-learn     & 1.3+  & Utilidades de validación \\
+matplotlib       & 3.8+  & Visualizaciones base \\
+seaborn          & 0.13+ & Heatmaps y estilos \\
+geopandas        & 0.14+ & Proyecciones geoespaciales \\
+folium           & 0.15+ & Mapas interactivos \\
+streamlit        & 1.56+ & Dashboard \\
+streamlit-folium & 0.18+ & Integración mapa-dashboard \\
+plotly           & 5.18+ & Gauges interactivos \\
+pydantic         & 2.5+  & Validación de schemas \\
+anthropic        & 0.25+ & Cliente API Claude \\
+requests         & 2.31+ & HTTP sincrónico \\
+httpx            & 0.26+ & HTTP asíncrono \\
+python-dotenv    & 1.0+  & Carga de variables de entorno \\
+pytest           & 8.0+  & Testing \\
+pytest-cov       & 4.1+  & Cobertura de tests \\
+requests-cache   & 1.1+  & Caché local de respuestas API \\
+\texttt{[POR CONFIRMAR]} & --- & Otras dependencias del \texttt{requirements.txt} real \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{APIs externas consumidas}
+\begin{itemize}
+  \item TomTom Traffic Stats API --- \url{https://developer.tomtom.com/traffic-api}
+  \item TomTom Routing API --- \url{https://developer.tomtom.com/routing-api}
+  \item OpenWeatherMap API --- \url{https://openweathermap.org/api}
+  \item Google Maps Distance Matrix API --- \url{https://developers.google.com/maps/documentation/distance-matrix}
+  \item Anthropic Messages API --- \url{https://docs.anthropic.com/en/api/messages}
+  \item CKAN API (datos.cdmx.gob.mx) --- \url{https://datos.cdmx.gob.mx/api/3}
+\end{itemize}
+
+\subsection{Fuentes de datos públicos}
+\begin{itemize}
+  \item C5 CDMX Incidentes Viales --- \url{https://datos.cdmx.gob.mx/dataset/incidentes-viales-c5}
+  \item INEGI Encuesta Origen-Destino ZMVM 2017 --- \url{https://www.inegi.org.mx}
+  \item DataMéxico (Sec. Economía) --- \url{https://www.economia.gob.mx/datamexico/es/profile/geo/valle-de-mexico}
+  \item SEMOVI aforos vehiculares --- Gobierno CDMX, datasets abiertos
+  \item TomTom Traffic Index 2024 --- \url{https://www.tomtom.com/traffic-index/mexico-city-traffic/}
+\end{itemize}
+
+\subsection{Software de desarrollo}
+\begin{itemize}
+  \item \textbf{Visual Studio Code} con extensiones: Python, Pylance, Jupyter, LaTeX Workshop
+  \item \textbf{Claude Code} (Anthropic) --- asistencia de programación para refactors y debugging
+  \item \textbf{Git + GitHub} --- control de versiones
+  \item \textbf{Python venv} --- entorno virtual aislado
+  \item \textbf{TeX Live} --- distribución \LaTeX
+  \item \textbf{Node.js 22} --- runtime para \texttt{pptxgenjs}
+  \item \textbf{LibreOffice} --- conversión pptx $\rightarrow$ pdf para QA visual
+\end{itemize}
+
+\subsection{Plataformas de despliegue y distribución}
+\begin{itemize}
+  \item \textbf{GitHub} --- \url{https://github.com/Palermo01/UrbanFlow_CDMX}
+  \item \textbf{Google Colab} --- ejecución del notebook reproducible
+  \item \textbf{Streamlit Community Cloud / ngrok} --- opciones de demo pública (por confirmar)
+\end{itemize}
+
+\subsection{Recursos académicos y bibliográficos}
+\begin{itemize}
+  \item Norris, J. R. (1997). \textit{Markov Chains}. Cambridge University Press
+  \item Rubinstein \& Kroese (2016). \textit{Simulation and the Monte Carlo Method} (3rd ed.). Wiley
+  \item Van Lint \& Hoogendoorn (2010). A Robust and Efficient Method for Fusing Heterogeneous Data from Traffic Sensors. \textit{Computer-Aided Civil and Infrastructure Engineering}, 25(8)
+  \item Harris et al. (2020). Array programming with NumPy. \textit{Nature}, 585
+  \item Sinnott, R. W. (1984). Virtues of the Haversine. \textit{Sky and Telescope}, 68(2)
+\end{itemize}
+
+\subsection{Recursos de mercado y contexto}
+\begin{itemize}
+  \item Mordor Intelligence (2025). \textit{Mexico Last Mile Delivery Market Report 2025--2030}
+  \item The Logistics World (2024). Logística de última milla: innovaciones para entregas rápidas en 2025
+  \item Asociación Mexicana de Venta Online --- Estudio sobre Venta Online en México 2025
+  \item T21 (2026). Última milla, el eslabón más crítico de la logística en México hacia 2030
+\end{itemize}
+
+% ============================================================
+\section{Resumen ejecutivo del trabajo realizado}
+
+\subsection{Métricas del proyecto}
+\begin{itemize}
+  \item Líneas de código: \texttt{[POR CONFIRMAR]} en \texttt{src/} y \texttt{app/}
+  \item Tests automatizados: \textbf{443 tests pasando al 100\,\%}
+  \item Cobertura de tests: \texttt{[POR CONFIRMAR]}\,\%
+  \item Fuentes de datos integradas: \textbf{5}
+  \item Perturbaciones en el catálogo: \textbf{11}
+  \item Rutas en el dataset de validación: \textbf{30}
+  \item Páginas del artículo técnico: \textbf{23}
+  \item Slides de la presentación: \textbf{16}
+  \item Celdas del notebook Colab: \textbf{38}
+\end{itemize}
+
+\subsection{Resultados empíricos}
+\begin{itemize}
+  \item MAPE del $P_{50}$ (VialAI): \textbf{11.9\,\%}
+  \item MAPE del ETA (TomTom): 19.0\,\%
+  \item Ventaja de VialAI sobre TomTom: \textbf{7.1 puntos porcentuales}
+  \item Cobertura empírica de la banda: \textbf{93.3\,\%}
+  \item MAE en minutos: \textbf{4.8 min}
+  \item Latencia del motor: \textbf{$<$500\,ms} por consulta
+\end{itemize}
+
+\subsection{Entregables finales}
+\begin{enumerate}
+  \item \texttt{UrbanFlow\_CDMX\_Articulo\_v2.pdf} --- artículo técnico (23 pp)
+  \item \texttt{UrbanFlow\_CDMX\_Colab.ipynb} --- notebook reproducible
+  \item \texttt{UrbanFlow\_CDMX\_Presentacion.pptx} --- presentación ejecutiva (16 slides)
+  \item \texttt{VialAI\_Pitch\_B2B.pdf} --- pitch comercial para última milla (4 pp)
+  \item \texttt{guion\_video.md} --- guion del video de 5 minutos
+  \item \texttt{checklist\_demo.md} --- checklist para demo en vivo
+  \item \texttt{Inventario\_Proyecto.pdf} --- este documento
+  \item Código fuente completo en \url{https://github.com/Palermo01/UrbanFlow_CDMX}
+\end{enumerate}
+
+\vfill
+\begin{center}
+{\color{navy}\rule{0.6\textwidth}{0.5pt}}\\[0.5em]
+\textit{Documento preparado por} \textbf{Carlos Armando López Encino}\\
+Diplomado en Ciencia de Datos \(\cdot\) FES Acatlán \(\cdot\) UNAM\\
+Abril 2026
+\end{center}
+
+\end{document}
