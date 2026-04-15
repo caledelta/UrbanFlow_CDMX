@@ -203,7 +203,7 @@
 
 **[SLIDE 16 – Gracias]**
 
-> (4:50) El código completo, los 443 tests que pasa el motor y el agente conversacional están en **GitHub, Palermo01 / UrbanFlow_CDMX**.
+> (4:50) El código completo, los 720 tests que pasa el motor y el agente conversacional están en **GitHub, caledelta / UrbanFlow_CDMX**.
 
 > (4:56) Muchas gracias por su atención. *(sonrisa, pausa)*
 

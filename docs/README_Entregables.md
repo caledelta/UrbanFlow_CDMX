@@ -4,7 +4,7 @@
 FES Acatlán · UNAM · Abril 2026
 
 **Autor:** Carlos Armando López Encino
-**Repositorio:** [github.com/Palermo01/UrbanFlow_CDMX](https://github.com/Palermo01/UrbanFlow_CDMX)
+**Repositorio:** [github.com/caledelta/UrbanFlow_CDMX](https://github.com/caledelta/UrbanFlow_CDMX)
 
 ---
 
@@ -86,7 +86,7 @@ Presentación de **16 slides** en formato 16:9 widescreen (13.33 × 7.5 pulgadas
 | 2 | ¿Qué es la ZMVM? | Contexto geográfico y demográfico |
 | 3 | El problema | Número gigante 152 horas/año |
 | 4 | Agenda | Regla del 3 (datos, VialAI, estrategia) |
-| 5 | Los datos | 6 KPI cards (5 fuentes, 10K, 3 estados, 11 perturbaciones, 443 tests, <500 ms) |
+| 5 | Los datos | 6 KPI cards (5 fuentes, 10K, 3 estados, 11 perturbaciones, 720 tests, <500 ms) |
 | 6 | Cadenas de Markov | Matriz de transición como heatmap |
 | 7 | Monte Carlo | Histograma conceptual con P10/P50/P90 |
 | 8 | Perturbaciones contextuales | 4 cards (Metro, eventos, marchas, festivos) |
@@ -182,7 +182,7 @@ Checklist de 5 minutos exactos para la presentación en vivo del proyecto frente
 
 ### Fase 1 — Técnica (ya resuelta)
 
-- [x] Motor Markov + Monte Carlo funcionando (443 tests pasando)
+- [x] Motor Markov + Monte Carlo funcionando (720 tests pasando)
 - [x] Pipeline de datos con 5 fuentes
 - [x] Agente VialAI con Anthropic API
 - [x] Streamlit con mapa Folium y chat integrado
@@ -291,13 +291,13 @@ Abrir `UrbanFlow_CDMX_Presentacion.pptx` en PowerPoint, LibreOffice Impress, Key
 El repositorio GitHub contiene el código ejecutable:
 
 ```bash
-git clone https://github.com/Palermo01/UrbanFlow_CDMX.git
+git clone https://github.com/caledelta/UrbanFlow_CDMX.git
 cd UrbanFlow_CDMX
 python -m venv .venv
 source .venv/bin/activate  # o .venv\Scripts\activate en Windows
 pip install -r requirements.txt
 # Configurar las API keys en .env (ver .env.example)
-pytest tests/ -q  # debe reportar 443 passed
+pytest tests/ -q  # debe reportar 720 passed
 python -m streamlit run app/streamlit_app.py
 ```
 
@@ -322,7 +322,7 @@ python -m streamlit run app/streamlit_app.py
 
 **Nicho objetivo:** B2B logística de última milla en ZMVM — mercado de USD 15.6B en 2025, proyectado a USD 27.3B en 2030 (CAGR 11.8%)
 
-**Estado técnico:** Funcional, 443 tests automatizados al 100%, código en GitHub
+**Estado técnico:** Funcional, 720 tests automatizados al 100%, código en GitHub
 
 ---
 
@@ -332,7 +332,7 @@ python -m streamlit run app/streamlit_app.py
 Estudiante del Diplomado en Ciencia de Datos
 FES Acatlán · UNAM
 
-**GitHub del proyecto:** [github.com/Palermo01/UrbanFlow_CDMX](https://github.com/Palermo01/UrbanFlow_CDMX)
+**GitHub del proyecto:** [github.com/caledelta/UrbanFlow_CDMX](https://github.com/caledelta/UrbanFlow_CDMX)
 
 ---
 

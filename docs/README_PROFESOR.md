@@ -30,8 +30,8 @@ Le sugiero tres pruebas concretas:
 
 3. **Chat con el agente** — Pregunte: *"¿Vale la pena salir ahora para Santa Fe, o espero 30 minutos?"*. Observe cómo VialAI razona y entrega una recomendación accionable.
 
-🔗 **Código fuente completo:** https://github.com/Palermo01/UrbanFlow_CDMX
-*(443 tests automatizados, todos pasando al 100%)*
+🔗 **Código fuente completo:** https://github.com/caledelta/UrbanFlow_CDMX
+*(720 tests automatizados, todos pasando al 100%)*
 
 ---
 
@@ -39,7 +39,7 @@ Le sugiero tres pruebas concretas:
 
 Los archivos están ordenados aproximadamente según el orden sugerido de lectura:
 
-### 1️⃣ `UrbanFlow_CDMX_Articulo_v2.pdf` (23 páginas · 548 KB) — **LEA PRIMERO**
+### 1️⃣ `proyecto_ZMCDMX_v3.pdf` (23 páginas) — **LEA PRIMERO**
 
 Artículo técnico completo en formato académico. Contiene todo lo que necesita saber sobre el proyecto:
 
@@ -99,7 +99,7 @@ Inventario exhaustivo de **todo** lo que se construyó durante el proyecto, orga
 - Todas las fuentes de datos públicos
 - Todos los recursos académicos y bibliográficos consultados
 - Retos técnicos reales encontrados y cómo se resolvieron
-- Métricas finales del proyecto (443 tests, 5 fuentes, 11 perturbaciones, etc.)
+- Métricas finales del proyecto (720 tests, 5 fuentes, 11 perturbaciones, etc.)
 
 Útil si quiere entender el alcance total del trabajo o verificar que el proyecto es reproducible.
 
@@ -111,7 +111,7 @@ Inventario exhaustivo de **todo** lo que se construyó durante el proyecto, orga
 
 | Criterio de la rúbrica | Peso | Archivo que lo cubre |
 |---|---|---|
-| Documento técnico | 15 pts | `UrbanFlow_CDMX_Articulo_v2.pdf` |
+| Documento técnico | 15 pts | `proyecto_ZMCDMX_v3.pdf` |
 | Estrategia de negocio | 15 pts | §11 del artículo + `VialAI_Pitch_B2B.pdf` |
 | Notebook reproducible | 15 pts | `UrbanFlow_CDMX_Colab.ipynb` |
 | Presentación | 10 pts | `UrbanFlow_CDMX_Presentacion.pptx` |
@@ -154,7 +154,7 @@ Para cualquier pregunta, aclaración o sugerencia sobre el proyecto:
 **Carlos Armando López Encino**
 Diplomado en Ciencia de Datos · FES Acatlán · UNAM
 
-- 📂 GitHub: https://github.com/Palermo01/UrbanFlow_CDMX
+- 📂 GitHub: https://github.com/caledelta/UrbanFlow_CDMX
 - 🌐 Sistema en vivo: https://urbanflow-cdmx.streamlit.app
 
 ---

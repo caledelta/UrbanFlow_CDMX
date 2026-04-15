@@ -44,7 +44,7 @@
 - [ ] **Verificar .env cargado:** en la consola de Streamlit no debe aparecer ningún warning sobre `ANTHROPIC_API_KEY`
 - [ ] **Verificar TomTom:** que el mapa Folium se renderice correctamente con los tiles cargados
 - [ ] **Verificar OpenWeatherMap:** que el widget de clima muestre la temperatura actual
-- [ ] **443 tests pasando:** `pytest tests/ -q` debe mostrar `443 passed`
+- [ ] **720 tests pasando:** `pytest tests/ -q` debe mostrar `720 passed`
 
 ### Configuración de pantalla para compartir
 
@@ -192,7 +192,7 @@
 
 > "Con eso cierro la demo. En resumen: UrbanFlow CDMX entrega bandas probabilísticas P10-P90 con un Índice de Confiabilidad interpretable, integra cinco fuentes de datos en tiempo real, incorpora perturbaciones contextuales que ningún sistema comercial tiene, y todo está envuelto en un agente conversacional que cualquier dispatcher puede usar."
 
-> "El código completo con 443 tests está en mi GitHub. Gracias, profesor. *(pausa)* ¿Tiene alguna pregunta?"
+> "El código completo con 720 tests está en mi GitHub. Gracias, profesor. *(pausa)* ¿Tiene alguna pregunta?"
 
 ---
 
@@ -276,7 +276,7 @@
 
 Si terminas antes de los 5 minutos y tienes 20-30 segundos libres, agrega UNA de estas:
 
-1. **"Este motor estocástico está cubierto por 443 tests automatizados que pasan al 100%. No es un prototipo de diplomado, es código que puede ir a producción mañana."**
+1. **"Este motor estocástico está cubierto por 720 tests automatizados que pasan al 100%. No es un prototipo de diplomado, es código que puede ir a producción mañana."**
 
 2. **"El código está publicado bajo licencia abierta en GitHub para que cualquier estudiante de la FES Acatlán pueda clonarlo, correrlo y aprender de él. Esa es la mejor devolución que puedo hacer al programa."**
 

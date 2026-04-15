@@ -2,7 +2,7 @@
 
 **Sistema de Predicción Estocástica de Tiempos de Viaje en la ZMVM**
 
-[![Tests](https://img.shields.io/badge/tests-443%20passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-720%20passing-brightgreen)]()
 [![Python](https://img.shields.io/badge/python-3.14-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-green)]()
 
@@ -51,26 +51,35 @@ UrbanFlow_CDMX/
 ├── src/
 │   ├── simulation/
 │   │   ├── markov_chain.py       # MarkovTrafficChain
-│   │   └── monte_carlo.py        # MonteCarloEngine vectorizado
-│   ├── data_sources/
-│   │   ├── tomtom_client.py      # TomTom Traffic + Routing
+│   │   ├── monte_carlo.py        # MonteCarloEngine vectorizado
+│   │   └── evaluador_rutas.py    # Comparación de rutas alternativas
+│   ├── ingestion/
+│   │   ├── tomtom_client.py      # TomTom Traffic Stats
+│   │   ├── tomtom_routing.py     # TomTom Routing API
 │   │   ├── weather_client.py     # OpenWeatherMap
 │   │   ├── c5_client.py          # Portal de datos abiertos CDMX
-│   │   └── gmaps_client.py       # Google Maps Distance Matrix
+│   │   └── pipeline.py           # Orquestador ETL
 │   ├── agent/
 │   │   ├── agent.py              # VialAIAgent (tool use loop)
 │   │   ├── perturbaciones.py     # Catálogo de 11 eventos contextuales
-│   │   └── tools.py              # Herramientas expuestas al LLM
-│   └── core/
+│   │   ├── tools.py              # Herramientas expuestas al LLM
+│   │   ├── prompts.py            # System prompts
+│   │   └── voice_io.py           # Síntesis de voz (TTS)
+│   ├── core/
+│   │   ├── rutas_personalizadas.py  # Gestión de rutas del usuario
+│   │   ├── recompensa.py            # Sistema de recompensa silenciosa
+│   │   ├── telemetria.py            # Analytics y feedback
+│   │   └── iconos_mapa.py           # Iconos contextuales de mapa
+│   └── models/
 │       └── schemas.py            # Modelos Pydantic
 ├── app/
 │   └── streamlit_app.py          # Dashboard interactivo
-├── tests/                        # 443 tests con pytest
+├── tests/                        # 720 tests con pytest
 ├── notebooks/
-│   ├── EDA_UrbanFlow_CDMX_v3.ipynb    # Análisis exploratorio
-│   └── UrbanFlow_CDMX_Colab.ipynb     # Notebook reproducible
+│   ├── UrbanFlow_CDMX_Colab.ipynb     # Notebook reproducible (entregable)
+│   └── archive/                       # EDA de desarrollo (v1, v2, v3)
 ├── docs/
-│   ├── UrbanFlow_CDMX_Articulo_v2.pdf        # Artículo técnico (23 pp)
+│   ├── proyecto_ZMCDMX_v3.pdf                # Artículo técnico (23 pp)
 │   ├── UrbanFlow_CDMX_Presentacion.pptx      # Presentación (16 slides)
 │   ├── VialAI_Pitch_B2B.pdf                  # Pitch comercial B2B (4 pp)
 │   └── Inventario_Proyecto.pdf               # Inventario del proyecto
@@ -106,7 +115,7 @@ El notebook tiene **todos los datos cacheados inline** y corre sin APIs ni crede
 
 ```bash
 # 1. Clonar el repo
-git clone https://github.com/Palermo01/UrbanFlow_CDMX.git
+git clone https://github.com/caledelta/UrbanFlow_CDMX.git
 cd UrbanFlow_CDMX
 
 # 2. Crear entorno virtual
@@ -142,7 +151,7 @@ Toda la documentación del proyecto está en la carpeta `docs/`:
 
 | Documento | Descripción |
 |---|---|
-| [Artículo técnico](docs/UrbanFlow_CDMX_Articulo_v2.pdf) | Paper académico de 23 páginas con metodología completa, validación y estrategia B2B |
+| [Artículo técnico](docs/proyecto_ZMCDMX_v3.pdf) | Paper académico de 23 páginas con metodología completa, validación y estrategia B2B |
 | [Presentación](docs/UrbanFlow_CDMX_Presentacion.pptx) | Slides ejecutivos (16 slides) para exposición del proyecto |
 | [Pitch B2B](docs/VialAI_Pitch_B2B.pdf) | Propuesta comercial para logística de última milla (4 páginas) |
 | [Inventario](docs/Inventario_Proyecto.pdf) | Listado completo de herramientas, bibliotecas y recursos utilizados |
@@ -152,7 +161,7 @@ Toda la documentación del proyecto está en la carpeta `docs/`:
 
 ## 🧪 Tests
 
-El proyecto tiene **443 tests automatizados** con cobertura del motor estocástico, pipeline de datos y agente conversacional:
+El proyecto tiene **720 tests automatizados** con cobertura del motor estocástico, pipeline de datos y agente conversacional:
 
 ```bash
 pytest tests/ -q                 # Ejecutar todos los tests
@@ -218,8 +227,8 @@ MIT License. Ver `LICENSE` para más detalles.
 **Carlos Armando López Encino**
 Diplomado en Ciencia de Datos · FES Acatlán · UNAM
 
-- GitHub: [@Palermo01](https://github.com/Palermo01)
-- Proyecto: [github.com/Palermo01/UrbanFlow_CDMX](https://github.com/Palermo01/UrbanFlow_CDMX)
+- GitHub: [@caledelta](https://github.com/caledelta)
+- Proyecto: [github.com/caledelta/UrbanFlow_CDMX](https://github.com/caledelta/UrbanFlow_CDMX)
 
 ---
 
