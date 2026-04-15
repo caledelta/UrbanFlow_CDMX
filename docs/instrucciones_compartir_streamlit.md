@@ -19,7 +19,7 @@ Este documento explica las cuatro opciones disponibles para que el profesor Fern
 
 ## 🟢 Opción A — Streamlit Community Cloud (RECOMENDADA)
 
-**Lo que es:** plataforma gratuita oficial de Streamlit que aloja tu app directamente desde tu repo de GitHub. Una vez configurada, tienes una URL pública permanente del estilo `https://urbanflow-cdmx.streamlit.app`.
+**Lo que es:** plataforma gratuita oficial de Streamlit que aloja tu app directamente desde tu repo de GitHub. Una vez configurada, tienes una URL pública permanente del estilo `http://localhost:8501 (correr localmente con: streamlit run app/streamlit_app.py)`.
 
 ### Ventajas
 
@@ -39,7 +39,7 @@ Este documento explica las cuatro opciones disponibles para que el profesor Fern
 ### Pasos para configurarlo
 
 1. **Ir a** [share.streamlit.io](https://share.streamlit.io) y entrar con tu cuenta de GitHub.
-2. Click en **"New app"** y seleccionar tu repo `Palermo01/UrbanFlow_CDMX`.
+2. Click en **"New app"** y seleccionar tu repo `caledelta/UrbanFlow_CDMX`.
 3. **Branch:** `main`. **Main file path:** `app/streamlit_app.py`.
 4. Click en **"Advanced settings"** → **"Secrets"** y pegar las API keys con este formato TOML:
    ```toml
@@ -80,7 +80,7 @@ Este patrón es robusto: funciona en local (lee `.env`) Y en la nube (lee `st.se
 
 > *"Profesor Barranco, le comparto el link de VialAI para que pueda navegar y probarlo cuando guste:*
 >
-> *🔗 https://urbanflow-cdmx.streamlit.app*
+> *🔗 http://localhost:8501 (correr localmente con: streamlit run app/streamlit_app.py)*
 >
 > *Le sugiero probar primero la ruta Polanco → Santa Fe en horario matutino, después activar la perturbación 'Manifestación' y ver cómo cambia el Índice de Confiabilidad. También puede preguntarle directamente al chat de VialAI cualquier cosa sobre rutas en la ZMVM. Cualquier comentario o sugerencia, aquí estoy."*
 
@@ -175,7 +175,7 @@ Este patrón es robusto: funciona en local (lee `.env`) Y en la nube (lee `st.se
 
 1. Clonar el repo:
    ```bash
-   git clone https://github.com/Palermo01/UrbanFlow_CDMX.git
+   git clone https://github.com/caledelta/UrbanFlow_CDMX.git
    cd UrbanFlow_CDMX
    ```
 2. Crear y activar entorno virtual:
@@ -251,15 +251,15 @@ agente conversacional ("VialAI") que predice tiempos de viaje en la ZMVM
 con bandas de incertidumbre P10/P50/P90 y un Índice de Confiabilidad.
 
 🔗 ACCESO AL SISTEMA EN VIVO:
-   https://urbanflow-cdmx.streamlit.app
+   http://localhost:8501 (correr localmente con: streamlit run app/streamlit_app.py)
    (URL pública, no requiere instalación)
 
 📂 CÓDIGO FUENTE COMPLETO:
-   https://github.com/Palermo01/UrbanFlow_CDMX
-   (443 tests automatizados, todos pasando)
+   https://github.com/caledelta/UrbanFlow_CDMX
+   (720 tests automatizados, todos pasando)
 
 📎 ADJUNTOS:
-   1. UrbanFlow_CDMX_Articulo_v2.pdf — Artículo técnico (23 páginas)
+   1. proyecto_ZMCDMX_v3.pdf — Artículo técnico (23 páginas)
    2. UrbanFlow_CDMX_Colab.ipynb — Notebook reproducible en Google Colab
    3. UrbanFlow_CDMX_Presentacion.pptx — Presentación ejecutiva (16 slides)
    4. VialAI_Pitch_B2B.pdf — Propuesta para nicho B2B última milla

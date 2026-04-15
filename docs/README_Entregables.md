@@ -18,7 +18,7 @@ Los siete archivos listados abajo cubren los seis criterios de la rúbrica de ev
 
 ## 📁 Contenido del paquete
 
-### 1. `UrbanFlow_CDMX_Articulo_v2.pdf` (artículo técnico completo)
+### 1. `proyecto_ZMCDMX_v3.pdf` (artículo técnico completo)
 
 **Peso en rúbrica:** 15 pts (Documento) + 15 pts (Estrategia) = **30 pts**
 
@@ -44,7 +44,7 @@ Artículo técnico de 22 páginas en formato académico con las 12 secciones est
 - Código vectorizado incluido en listings LaTeX
 - Glosario y apéndice de parámetros
 
-**También se incluye** `UrbanFlow_CDMX_Articulo_v2.tex` con el fuente LaTeX completo por si el evaluador quiere recompilar.
+**También se incluye** `proyecto_ZMCDMX_v3.tex` con el fuente LaTeX completo por si el evaluador quiere recompilar.
 
 ---
 
@@ -167,7 +167,7 @@ Checklist de 5 minutos exactos para la presentación en vivo del proyecto frente
 
 | Criterio | Peso | Archivo que lo cubre | Estado |
 |---|---|---|---|
-| **Documento técnico** | 15 pts | `UrbanFlow_CDMX_Articulo_v2.pdf` | ✅ Completo (22 páginas) |
+| **Documento técnico** | 15 pts | `proyecto_ZMCDMX_v3.pdf` | ✅ Completo |
 | **Estrategia de negocio** | 15 pts | §11 del artículo + slide 13-14 | ✅ Completo (B2B última milla con datos reales) |
 | **Notebook reproducible** | 15 pts | `UrbanFlow_CDMX_Colab.ipynb` | ✅ Completo (corre en Colab sin credenciales) |
 | **Presentación** | 10 pts | `UrbanFlow_CDMX_Presentacion.pptx` | ✅ Completo (16 slides) |
@@ -269,8 +269,8 @@ Muestrame el diff completo de los 2 archivos modificados. No toques nada más.
 
 ```bash
 # Si quieres recompilar el LaTeX tú mismo
-pdflatex UrbanFlow_CDMX_Articulo_v2.tex
-pdflatex UrbanFlow_CDMX_Articulo_v2.tex  # segunda pasada para TOC y refs
+pdflatex proyecto_ZMCDMX_v3.tex
+pdflatex proyecto_ZMCDMX_v3.tex  # segunda pasada para TOC y refs
 ```
 
 ### Verificar el notebook Colab

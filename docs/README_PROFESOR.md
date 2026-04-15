@@ -15,12 +15,17 @@ Los archivos están organizados para que pueda navegar el proyecto en **15 minut
 
 ---
 
-## 🚀 Acceso inmediato al sistema en vivo
+## 🚀 Acceso al sistema
 
-Si solo tiene 5 minutos y quiere ver el sistema funcionando:
+El sistema se demostrará en vivo durante la defensa. Para correr localmente (~5 minutos):
 
-🔗 **https://urbanflow-cdmx.streamlit.app**
-*(URL pública, sin requerir instalación)*
+```bash
+git clone https://github.com/caledelta/UrbanFlow_CDMX.git
+cd UrbanFlow_CDMX
+pip install -r requirements.txt
+cp .env.example .env   # agregar API keys (ver README.md)
+streamlit run app/streamlit_app.py
+```
 
 Le sugiero tres pruebas concretas:
 
@@ -115,7 +120,7 @@ Inventario exhaustivo de **todo** lo que se construyó durante el proyecto, orga
 | Estrategia de negocio | 15 pts | §11 del artículo + `VialAI_Pitch_B2B.pdf` |
 | Notebook reproducible | 15 pts | `UrbanFlow_CDMX_Colab.ipynb` |
 | Presentación | 10 pts | `UrbanFlow_CDMX_Presentacion.pptx` |
-| Interfaz de uso | 10 pts | https://urbanflow-cdmx.streamlit.app |
+| Interfaz de uso | 10 pts | App Streamlit — demo en vivo en la defensa |
 | Video demostrativo (5 min) | 20 pts | Se entrega por separado |
 | Demo en vivo (5 min) | 25 pts | Presentación sincrónica |
 | **TOTAL** | **110 pts** | |
@@ -155,7 +160,6 @@ Para cualquier pregunta, aclaración o sugerencia sobre el proyecto:
 Diplomado en Ciencia de Datos · FES Acatlán · UNAM
 
 - 📂 GitHub: https://github.com/caledelta/UrbanFlow_CDMX
-- 🌐 Sistema en vivo: https://urbanflow-cdmx.streamlit.app
 
 ---
 

@@ -93,13 +93,17 @@ UrbanFlow_CDMX/
 
 ## 🚀 Quick Start
 
-### Opción A: Acceder al sistema en vivo (recomendado)
+### Opción A: Correr el sistema en local
 
-Si solo quieres probar VialAI, visita el sistema en Streamlit Community Cloud:
+```bash
+git clone https://github.com/caledelta/UrbanFlow_CDMX.git
+cd UrbanFlow_CDMX
+pip install -r requirements.txt
+cp .env.example .env   # agregar tus API keys
+streamlit run app/streamlit_app.py
+```
 
-🔗 **https://urbanflow-cdmx.streamlit.app**
-
-No necesitas instalar nada.
+La app estará en `http://localhost:8501` en ~5 minutos.
 
 ### Opción B: Correr el notebook reproducible en Google Colab
 
