@@ -1,0 +1,604 @@
+% !TEX program = pdflatex
+% ════════════════════════════════════════════════════════════════════════════
+%  UrbanFlow CDMX / VialAI — Interfaz de uso
+%  Diplomado en Ciencia de Datos · FES Acatlán, UNAM · Gen 30 · 2026
+%  Autor: Carlos Armando López Encino
+%  Profesor: Mtro. Fernando Barranco Rodríguez
+% ════════════════════════════════════════════════════════════════════════════
+
+\documentclass[11pt,a4paper]{article}
+
+% ───── Codificación y lenguaje ─────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla,es-noindentfirst]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% ───── Matemáticas ─────────────────────────────────────────────
+\usepackage{amsmath}
+\usepackage{siunitx}
+\sisetup{output-decimal-marker={.},group-separator={\,}}
+
+% ───── Geometría y espaciado ───────────────────────────────────
+\usepackage[a4paper,margin=2.5cm,headheight=15pt]{geometry}
+\usepackage{setspace}
+\setstretch{1.15}
+\usepackage{parskip}
+
+% ───── Color e identidad VialAI ────────────────────────────────
+\usepackage{xcolor}
+\definecolor{vialNavyDeep}{HTML}{0B1F3A}
+\definecolor{vialNavy}{HTML}{0F2E4D}
+\definecolor{vialTeal}{HTML}{2EBFA6}
+\definecolor{vialAqua}{HTML}{3BA3BD}
+\definecolor{vialGreen}{HTML}{A3D88F}
+\definecolor{vialAmber}{HTML}{F5B836}
+\definecolor{vialText}{HTML}{1F2937}
+\definecolor{vialMuted}{HTML}{4A5B6D}
+\definecolor{vialBgSoft}{HTML}{F3F6FA}
+
+% ───── Gráficos ────────────────────────────────────────────────
+\usepackage{graphicx}
+\graphicspath{{./}{imagenes_12/}{imagenes_12/imagenes_png/}}
+\usepackage{float}
+
+% ───── Tablas ──────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{colortbl}
+
+% ───── Tipografía de secciones ─────────────────────────────────
+\usepackage{titlesec}
+\titleformat{\section}
+  {\color{vialNavy}\normalfont\Large\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}
+  {\color{vialNavy}\normalfont\large\bfseries}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}
+  {\color{vialTeal}\normalfont\normalsize\bfseries}{\thesubsubsection}{0.5em}{}
+
+% ───── Encabezados y pies ──────────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\color{vialMuted}\small VialAI --- Interfaz de uso}
+\fancyhead[R]{\color{vialMuted}\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\color{vialTeal}\hrule width\headwidth}
+
+% ───── Código ──────────────────────────────────────────────────
+\usepackage{listings}
+\lstdefinestyle{vialcode}{
+  backgroundcolor=\color{vialBgSoft},
+  basicstyle=\ttfamily\footnotesize\color{vialText},
+  keywordstyle=\color{vialNavy}\bfseries,
+  stringstyle=\color{vialTeal},
+  commentstyle=\color{vialMuted}\itshape,
+  frame=single, framesep=5pt, rulecolor=\color{vialTeal},
+  numbers=left, numberstyle=\tiny\color{vialMuted},
+  breaklines=true, showstringspaces=false, captionpos=b,
+}
+\lstset{style=vialcode,
+  literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+           {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+           {ñ}{{\~n}}1 {Ñ}{{\~N}}1 {¿}{?`}1 {¡}{!`}1
+}
+
+% ───── Cajas de callout ────────────────────────────────────────
+\usepackage[most]{tcolorbox}
+
+\newtcolorbox{tipbox}[1][]{%
+  enhanced, breakable,
+  colback=vialBgSoft, colframe=vialTeal, coltitle=vialNavy,
+  fonttitle=\bfseries, title=#1,
+  boxrule=0.8pt, arc=3mm, left=4mm, right=4mm, top=2mm, bottom=2mm,
+}
+
+\newtcolorbox{keybox}[1][]{%
+  enhanced, breakable,
+  colback=vialNavy!5, colframe=vialNavy, coltitle=white,
+  fonttitle=\bfseries, title=#1,
+  boxrule=1pt, arc=3mm, left=4mm, right=4mm, top=2mm, bottom=2mm,
+}
+
+\newtcolorbox{casebox}[1][]{%
+  enhanced, breakable,
+  colback=vialAmber!10, colframe=vialAmber!80!black, coltitle=vialNavy,
+  fonttitle=\bfseries, title=#1,
+  boxrule=0.8pt, arc=3mm, left=4mm, right=4mm, top=2mm, bottom=2mm,
+}
+
+% ───── Hipervínculos ───────────────────────────────────────────
+\usepackage[colorlinks=true,
+            linkcolor=vialNavy,
+            citecolor=vialTeal,
+            urlcolor=vialAqua]{hyperref}
+
+% ───── Comandos propios ────────────────────────────────────────
+\newcommand{\VialAI}{\textbf{\textcolor{vialTeal}{Vial}\textcolor{vialAmber}{AI}}}
+\newcommand{\ZMVM}{\textsc{zmvm}}
+\newcommand{\CDMX}{\textsc{cdmx}}
+
+% ──────────────────────────────────────────────────────────────
+\begin{document}
+
+% ═══════════════════════ PORTADA ═══════════════════════════════
+\begin{titlepage}
+\centering
+\vspace*{1.5cm}
+
+{\color{vialMuted}\large Diplomado en Ciencia de Datos \textbullet\ Generación 30}\\[0.3em]
+{\color{vialMuted}\small FES Acatlán \textbullet\ UNAM \textbullet\ 2026}\\[2cm]
+
+{\color{vialTeal}\Huge\bfseries UrbanFlow \CDMX\ / \VialAI}\\[0.8em]
+{\color{vialNavy}\LARGE\bfseries Interfaz de uso}\\[0.5em]
+{\color{vialMuted}\large\itshape Cómo se construyó el sistema y\\
+cómo el usuario lo opera}\\[2.5cm]
+
+{\large\textbf{Carlos Armando López Encino}}\\
+{\small\color{vialMuted}cale.delta@gmail.com}\\[0.6em]
+{\small Profesor: Mtro. Fernando Barranco Rodríguez}\\[2cm]
+
+{\color{vialMuted}\small Proyecto integrador \textbullet\ 18 de abril de 2026}\\[0.4em]
+{\color{vialAqua}\small\url{https://github.com/caledelta/UrbanFlow_CDMX}}
+
+\vfill
+{\color{vialMuted}\footnotesize
+Documento complementario al artículo técnico \texttt{proyecto\_ZMCDMX\_v3.pdf}.
+Cubre el criterio ``Interfaz de uso'' de la rúbrica de evaluación.
+Para ejecutar el sistema: \texttt{streamlit run app/streamlit\_app.py}}
+\end{titlepage}
+
+\newpage
+\tableofcontents
+\newpage
+
+% ═══════════════════════════════════════════════════════════════
+%  PARTE I: CÓMO SE CONSTRUYÓ
+% ═══════════════════════════════════════════════════════════════
+
+\part*{Parte I — Cómo se construyó el sistema}
+\addcontentsline{toc}{part}{Parte I: Cómo se construyó el sistema}
+
+% ═══════════════════════ §1 VISIÓN GENERAL ═════════════════════
+\section{Visión general de la arquitectura}
+
+\VialAI\ es un sistema de cinco capas que transforma datos de tráfico
+en tiempo real en una recomendación conversacional:
+
+\begin{keybox}[Las cinco capas del sistema]
+\begin{enumerate}
+\item \textbf{Ingesta de datos} (\texttt{src/ingestion/}) ---
+cinco fuentes externas: TomTom Traffic Stats, TomTom Routing,
+OpenWeatherMap, C5 \CDMX, Google Maps Distance Matrix.
+\item \textbf{Motor estocástico} (\texttt{src/simulation/}) ---
+cadena de Markov de 3 estados (Fluido / Lento / Congestionado)
+calibrada con MLE sobre \num{1}M+ registros del C5; simulación
+Monte Carlo vectorizada de \num{10000} trayectorias.
+\item \textbf{Perturbaciones contextuales} (\texttt{src/agent/perturbaciones.py}) ---
+catálogo de 11 eventos típicos de la \ZMVM\ (marchas, cierres de
+Metro, festivos patrios) que modifican multiplicativamente la
+matriz de transición.
+\item \textbf{Agente conversacional} (\texttt{src/agent/agent.py}) ---
+bucle de \emph{tool use} sobre Claude claude-sonnet-4-6 con 6 herramientas
+especializadas, inyección de contexto de lugares personalizados y
+razonamiento sobre los resultados del motor.
+\item \textbf{Interfaz multimodal} (\texttt{app/streamlit\_app.py}) ---
+dashboard Streamlit con mapa Folium interactivo, tres modos de
+entrada (manual, chat, voz) y telemetría local consentida.
+\end{enumerate}
+\end{keybox}
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{@{}l l X@{}}
+\toprule
+\rowcolor{vialNavy!10}
+\textbf{Capa} & \textbf{Tecnología principal} & \textbf{Módulo} \\
+\midrule
+Backend numérico & Python 3.14, NumPy, SciPy & \texttt{src/simulation/} \\
+Datos tabulares & Pandas & \texttt{src/ingestion/} \\
+Validación de esquemas & Pydantic 2.x & \texttt{src/models/schemas.py} \\
+Agente LLM & Anthropic SDK (Claude claude-sonnet-4-6) & \texttt{src/agent/agent.py} \\
+Voz STT & faster-whisper (local) & \texttt{src/agent/voice\_io.py} \\
+Voz TTS & pyttsx3 (local) / OpenAI nova (premium) & \texttt{src/agent/voice\_io.py} \\
+Frontend & Streamlit 1.56 & \texttt{app/streamlit\_app.py} \\
+Mapas interactivos & Folium & \texttt{app/streamlit\_app.py} \\
+Visualizaciones & Plotly & \texttt{app/streamlit\_app.py} \\
+Testing & pytest (\num{720} tests) & \texttt{tests/} \\
+\bottomrule
+\end{tabularx}
+\caption{Stack tecnológico de \VialAI\ por capa funcional.}
+\label{tab:stack}
+\end{table}
+
+% ═══════════════════════ §2 PROCESO DE CONSTRUCCIÓN ════════════
+\section{Proceso de construcción: 16 bloques incrementales}
+
+El sistema se construyó en \textbf{16 bloques de desarrollo
+incrementales}, cada uno con su propio commit en GitHub y con
+verificación manual de que los tests seguían en verde antes de
+avanzar. Este proceso garantiza que el historial del repositorio
+es un registro auditable de cada decisión de diseño.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{@{}r X l@{}}
+\toprule
+\rowcolor{vialNavy!10}
+\textbf{Bloque} & \textbf{Qué se construyó} & \textbf{Capa} \\
+\midrule
+1--3  & Motor Monte Carlo + cadena de Markov + calibración MLE & Simulación \\
+4--5  & Conectores TomTom (Traffic + Routing) + pipeline ETL & Ingesta \\
+6     & Perturbaciones contextuales (catálogo de 11 eventos) & Agente \\
+7--8  & Agente VialAI con tool-use loop (6 herramientas) & Agente \\
+9     & Dashboard Streamlit inicial + mapa Folium & Interfaz \\
+10--12 & Interfaz de voz de tres capas (STT + TTS con fallback) & Voz \\
+13    & Rutas personalizadas y lugares guardados & Core \\
+14--15 & Sistema de recompensa silenciosa + telemetría + iconos & Core \\
+16    & Fixes de UX (flujo Iniciar viaje / Llegué) + marcadores & Interfaz \\
+\bottomrule
+\end{tabularx}
+\caption{Los 16 bloques de desarrollo de \VialAI. Cada bloque corresponde a uno
+         o más commits en \url{https://github.com/caledelta/UrbanFlow_CDMX}.}
+\label{tab:bloques}
+\end{table}
+
+\begin{tipbox}[Principio de desarrollo aplicado]
+Commits pequeños, pruebas automáticas entre cada paso, rollback
+inmediato ante cualquier regresión. Los \num{720} tests en
+\texttt{tests/} cubren el motor estocástico, el pipeline de datos
+y el agente conversacional. La velocidad de desarrollo sostenida
+se logra \emph{no} con grandes saltos, sino con iteraciones pequeñas
+y auditables.
+\end{tipbox}
+
+% ═══════════════════════ §3 MOTOR ESTOCÁSTICO ══════════════════
+\section{El motor estocástico: Markov + Monte Carlo}
+
+\subsection{Cadena de Markov de tráfico}
+
+El tráfico se modela como una cadena de Markov discreta de tres
+estados $S \in \{0 = \text{Fluido}, 1 = \text{Lento}, 2 = \text{Congestionado}\}$.
+La matriz de transición $P$ se calibra por máxima verosimilitud
+sobre la base histórica del C5 \CDMX\ (\num{1}M+ registros,
+2018--2024), segmentada por corredor, día de semana y franja horaria.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{@{}l c c c@{}}
+\toprule
+\rowcolor{vialNavy!10}
+\textbf{Estado actual} $\backslash$ \textbf{Estado siguiente}
+  & \textbf{Fluido} & \textbf{Lento} & \textbf{Congestionado} \\
+\midrule
+Fluido       & 0.72 & 0.21 & 0.07 \\
+Lento        & 0.18 & 0.52 & 0.30 \\
+Congestionado & 0.05 & 0.35 & 0.60 \\
+\bottomrule
+\end{tabular}
+\caption{Matriz de transición base $P$ para día hábil, pico AM (valores ilustrativos
+         a partir de calibración MLE sobre datos C5 \CDMX).}
+\label{tab:markov}
+\end{table}
+
+\subsection{Perturbaciones contextuales}
+
+Cuando se activa un evento (por ejemplo, ``Marcha 9 de marzo''),
+se aplica un factor multiplicador $f$ sobre $P[i, 2]$ (probabilidad
+de transitar a Congestionado) y se renormalizan las filas:
+
+\[
+P'[i, 2] = \min(P[i, 2] \times f,\; 1), \qquad
+P'[i, 0\ldots1] \text{ renormalizados para que la fila sume } 1.
+\]
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{@{}l l r@{}}
+\toprule
+\rowcolor{vialNavy!10}
+\textbf{Tipo de evento} & \textbf{Ejemplo real \CDMX} & \textbf{Factor $f$} \\
+\midrule
+Protesta / marcha     & Marcha 9 de marzo, marchas CNTE & 1.70 \\
+Festivo con cierres   & 15-sep (Grito), 16-sep (Desfile) & 1.80 \\
+Cierre de línea Metro & Línea 1 (2021--22), Línea 12 (2022) & 1.55 \\
+Evento masivo         & City Banamex, Foro Sol, Azteca & 1.40 \\
+Día hábil base        & --- & 1.00 \\
+Temporada baja        & Navidad, Año Nuevo & 0.60 \\
+\bottomrule
+\end{tabular}
+\caption{Catálogo de perturbaciones contextuales (extracto). La función
+         \texttt{seleccionar\_perturbacion(fecha, alcaldía)} devuelve
+         el factor más severo aplicable para un datetime y alcaldía dados.}
+\label{tab:perturbaciones}
+\end{table}
+
+\subsection{Simulación Monte Carlo vectorizada}
+
+Con la matriz $P'$ vigente, el motor ejecuta $N = 10000$ trayectorias
+en paralelo usando NumPy vectorizado (\texttt{src/simulation/monte\_carlo.py}).
+Cada trayectoria simula los estados de tráfico segmento a segmento
+desde el origen hasta el destino y acumula el tiempo de viaje total.
+Los percentiles $P_{10}$, $P_{50}$, $P_{90}$ se extraen directamente
+de la distribución empírica resultante, junto con el Índice de
+Confiabilidad:
+
+\[
+IC = \frac{P_{90} - P_{10}}{P_{50}}
+\]
+
+Un IC $< 0.5$ (verde), $0.5$--$1.0$ (amarillo), $> 1.0$ (rojo) indica
+si la ruta es confiable, variable o altamente incierta.
+
+% ═══════════════════════ §4 AGENTE VialAI ══════════════════════
+\section{El agente conversacional \VialAI}
+
+El agente implementa un bucle de \emph{tool use} con Claude claude-sonnet-4-6
+usando el SDK de Anthropic. El bucle sigue el patrón:
+
+\begin{enumerate}
+\item El usuario envía un mensaje (texto o voz transcrita).
+\item El LLM identifica qué herramientas necesita y las llama.
+\item Los resultados de las herramientas se inyectan en el contexto.
+\item El LLM razona sobre los resultados y genera la respuesta final.
+\end{enumerate}
+
+\subsection{Las seis herramientas del agente}
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+\rowcolor{vialNavy!10}
+\textbf{Herramienta} & \textbf{Función} \\
+\midrule
+\texttt{predecir\_tiempo} & Ejecuta el motor Monte Carlo y devuelve
+  $P_{10}$/$P_{50}$/$P_{90}$, distancia, velocidad media e IC. \\
+\texttt{obtener\_trafico\_actual} & Consulta TomTom Traffic Stats para el
+  estado actual de congestión en el corredor solicitado. \\
+\texttt{obtener\_clima} & Consulta OpenWeatherMap para la condición
+  climática vigente y ajusta el factor de velocidad. \\
+\texttt{comparar\_rutas} & Ejecuta predicciones en paralelo para
+  múltiples rutas y devuelve un ranking por IC. \\
+\texttt{evaluar\_perturbacion} & Consulta el catálogo de perturbaciones
+  activas y devuelve el factor $f$ aplicable. \\
+\texttt{obtener\_lugares\_guardados} & Recupera los lugares personalizados
+  del usuario (inyectados en el system prompt). \\
+\bottomrule
+\end{tabularx}
+\caption{Las seis herramientas registradas en el agente \VialAI.}
+\label{tab:herramientas}
+\end{table}
+
+\subsection{Interfaz de voz de tres capas}
+
+La entrada y salida de voz siguen una arquitectura de tres capas con
+degradación elegante (\emph{graceful degradation}):
+
+\begin{enumerate}
+\item \textbf{STT primario:} faster-whisper local (sin API externa,
+sin costo, sin latencia de red).
+\item \textbf{STT fallback:} Google Speech-to-Text vía API si el
+modelo local falla.
+\item \textbf{STT último recurso:} campo de texto manual en la UI.
+\end{enumerate}
+
+Para TTS (síntesis de voz):
+\begin{enumerate}
+\item \textbf{TTS premium:} voz \texttt{nova} de OpenAI (natural,
+\textless 1 s de latencia).
+\item \textbf{TTS local:} pyttsx3 (robótica pero funcional, sin
+dependencias externas).
+\item \textbf{Fallback silencioso:} el texto aparece en pantalla sin
+reproducción de audio.
+\end{enumerate}
+
+La compresión semántica a \textless 30 palabras antes de sintetizar
+está implementada en \texttt{voice\_io.py} usando Claude Haiku 4.5
+(modelo más rápido y económico del stack).
+
+% ═══════════════════════════════════════════════════════════════
+%  PARTE II: CÓMO EL USUARIO USA EL SISTEMA
+% ═══════════════════════════════════════════════════════════════
+
+\newpage
+\part*{Parte II — Cómo el usuario usa el sistema}
+\addcontentsline{toc}{part}{Parte II: Cómo el usuario usa el sistema}
+
+% ═══════════════════════ §5 INICIO ═════════════════════════════
+\section{Inicio rápido}
+
+Para ejecutar \VialAI\ en local (\textasciitilde 5 minutos):
+
+\begin{lstlisting}[language=bash, caption={Instalación y ejecución de VialAI.}]
+# 1. Clonar el repositorio
+git clone https://github.com/caledelta/UrbanFlow_CDMX.git
+cd UrbanFlow_CDMX
+
+# 2. Crear entorno virtual e instalar dependencias
+python -m venv .venv
+source .venv/bin/activate      # Linux/Mac
+.venv\Scripts\activate         # Windows
+pip install -r requirements.txt
+
+# 3. Configurar API keys
+cp .env.example .env
+# Editar .env y agregar: ANTHROPIC_API_KEY, TOMTOM_API_KEY,
+#   OPENWEATHERMAP_API_KEY, GOOGLE_MAPS_API_KEY
+
+# 4. (Opcional) Verificar que los tests pasan
+pytest tests/ -q
+
+# 5. Lanzar la aplicacion
+streamlit run app/streamlit_app.py
+\end{lstlisting}
+
+La aplicación estará disponible en \texttt{http://localhost:8501} en el
+navegador por defecto. Las API keys se leen exclusivamente desde
+\texttt{.env}; nunca se escriben en el código.
+
+% ═══════════════════════ §6 FLUJOS DE USO ══════════════════════
+\section{Los tres flujos de uso}
+
+La interfaz es \emph{single-page} con una barra lateral izquierda
+(configuración de consulta) y un área principal (mapa + resultados).
+El usuario puede interactuar de tres formas equivalentes:
+
+\subsection{Flujo 1: predicción manual}
+
+\begin{enumerate}
+\item Seleccionar \textbf{Origen} y \textbf{Destino} desde los menús
+desplegables o haciendo clic sobre el mapa.
+\item Ajustar la \textbf{hora de salida} y la \textbf{fecha} (por
+defecto: ahora).
+\item Activar opcionalmente una \textbf{perturbación contextual} en
+el selector (``Marcha'', ``Cierre Metro L12'', etc.).
+\item Pulsar el botón \textcolor{vialTeal}{\textbf{Predecir trayecto}}.
+\item Leer los resultados en la tarjeta central:
+$P_{50}$ (mediana), $P_{10}$ (optimista), $P_{90}$ (adverso),
+distancia y el Índice de Confiabilidad con su semáforo.
+\end{enumerate}
+
+\subsection{Flujo 2: chat con el agente}
+
+\begin{enumerate}
+\item Expandir el panel \textbf{Chat con VialAI} en la barra lateral.
+\item Escribir la consulta en lenguaje natural.
+\item El agente razona, llama a las herramientas necesarias (motor
+Monte Carlo, tráfico actual, clima, lugares guardados) y responde
+con la predicción integrada en un párrafo accionable.
+\end{enumerate}
+
+\begin{casebox}[Ejemplo de consulta al agente]
+\textbf{Usuario:} \textit{``¿Vale la pena salir ahora para Santa Fe,
+o espero 30 minutos? Estoy en Polanco, son las 8:10.''} \\[0.3em]
+\textbf{VialAI:} \textit{``Ruta de 17.3~km. Mediana esperada: 27~min
+(llegada 8:37). El IC es amarillo: en el 10\% adverso tardas hasta
+44~min. Si tu cita es antes de las 9, sal ahora. Si tienes hasta las
+9:30, esperar 30~min mejora el IC a verde.''} \\[0.2em]
+\textit{[El agente llamó internamente a: \texttt{predecir\_tiempo},
+\texttt{obtener\_trafico\_actual}, \texttt{obtener\_clima}]}
+\end{casebox}
+
+\subsection{Flujo 3: entrada por voz (manos libres)}
+
+\begin{enumerate}
+\item Pulsar el botón del micrófono \textbf{🎙} en la barra lateral.
+\item Hablar la consulta (mismo lenguaje natural que en el chat).
+\item Detener la grabación. El STT transcribe el audio localmente.
+\item El agente procesa la consulta y sintetiza la respuesta en audio
+(\textless 30 palabras, comprensible en una sola escucha).
+\item Si el TTS falla, la respuesta aparece en texto como fallback.
+\end{enumerate}
+
+\begin{tipbox}[Diseño para el conductor en movimiento]
+Los \textless 30 palabras de respuesta de voz no son arbitrarios:
+un conductor en motocicleta debe comprender la respuesta en una
+escucha sin apartar los ojos del tráfico. La compresión semántica
+con Haiku preserva solo la información accionable: el tiempo esperado,
+el nivel de confiabilidad y la recomendación concreta (``sal ahora''
+o ``espera N minutos'').
+\end{tipbox}
+
+% ═══════════════════════ §7 FLUJO DE VIAJE ═════════════════════
+\section{Flujo completo de un viaje}
+
+Además de las predicciones puntuales, \VialAI\ soporta un flujo de
+viaje completo que permite capturar el tiempo real y compararlo con
+la predicción:
+
+\begin{enumerate}
+\item \textbf{Predecir}: el usuario solicita una predicción (cualquier
+flujo de los tres anteriores).
+\item \textbf{Iniciar viaje}: una vez en ruta, pulsar
+\emph{``Iniciar viaje''}. El sistema registra el timestamp de inicio.
+\item \textbf{Llegar}: al arribar, pulsar \emph{``Llegué''}. El sistema
+calcula $\Delta = t_\text{real} - \hat{t}_{P50}$ y lo clasifica como
+\emph{exacto} ($|\Delta| \leq 10\%$), \emph{cerca} ($\leq 25\%$) o
+\emph{lejos} ($> 25\%$).
+\item \textbf{Calificar}: aparece un rating de 1--5 estrellas opcional
+que el usuario puede responder o posponer.
+\item \textbf{Mis estadísticas}: el panel acumula el historial de
+exactitud del sistema para ese usuario específico.
+\end{enumerate}
+
+Todos los datos se guardan \textbf{localmente} en
+\texttt{data/telemetry/}. Ningún dato personal se transmite a
+servidores externos.
+
+% ═══════════════════════ §8 LUGARES GUARDADOS ══════════════════
+\section{Lugares personalizados y marcadores en el mapa}
+
+El usuario puede guardar sus lugares frecuentes (casa, trabajo,
+clientes recurrentes) asignándoles un nombre y una categoría con
+ícono contextual:
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{@{}l l l@{}}
+\toprule
+\rowcolor{vialNavy!10}
+\textbf{Categoría} & \textbf{Ícono en el mapa} & \textbf{Ejemplo} \\
+\midrule
+Casa & 🏠 casa & ``Mi casa'' \\
+Trabajo & 🏢 edificio & ``Oficina'' \\
+Restaurante & 🍴 cubiertos & ``El Taquero de confianza'' \\
+Gasolinera & ⛽ bomba & ``Pemex Ejército Nacional'' \\
+Médico / Hospital & 🏥 hospital & ``Clínica 36 IMSS'' \\
+Favorito genérico & ⭐ estrella & ``Punto de reunión'' \\
+\bottomrule
+\end{tabular}
+\caption{Categorías de lugares guardados con sus íconos contextuales en el mapa Folium.}
+\label{tab:lugares}
+\end{table}
+
+Los lugares guardados se inyectan automáticamente en el \emph{system
+prompt} del agente, de modo que el usuario puede preguntar
+\textit{``¿Cuánto tardo a mi trabajo?''} sin necesidad de especificar
+la dirección cada vez.
+
+% ═══════════════════════ §9 RECOMENDACIONES DE USO ═════════════
+\section{Recomendaciones para el profesor / evaluador}
+
+Para verificar las capacidades del sistema en una sesión corta,
+se sugieren tres pruebas concretas:
+
+\begin{enumerate}
+\item \textbf{Predicción base} --- Origen: \textbf{Polanco},
+Destino: \textbf{Santa Fe}, Hora: 08:15. Observar la banda
+$P_{10}$/$P_{50}$/$P_{90}$ y el Índice de Confiabilidad.
+
+\item \textbf{Activar una perturbación} --- En el panel lateral
+activar \textbf{``Marcha 9 de marzo''} y recalcular. Notar cómo la
+mediana sube y el IC pasa de amarillo a rojo.
+
+\item \textbf{Chat con el agente} --- Preguntar: \textit{``¿Vale la
+pena salir ahora para Santa Fe, o espero 30 minutos?''} Observar cómo
+\VialAI\ razona y entrega una recomendación accionable.
+\end{enumerate}
+
+\begin{tipbox}[Si no se tienen API keys]
+El sistema soporta \emph{modo offline}. Sin API keys externas,
+el motor estocástico opera con los datos en caché local
+(\texttt{data/}) y entrega predicciones igualmente válidas
+para las rutas que ya han sido consultadas previamente.
+El agente de voz y el motor Monte Carlo son totalmente locales
+y no requieren credenciales externas.
+\end{tipbox}
+
+\end{document}

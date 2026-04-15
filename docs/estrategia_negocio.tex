@@ -1,0 +1,467 @@
+% !TEX program = pdflatex
+% ════════════════════════════════════════════════════════════════════════════
+%  UrbanFlow CDMX / VialAI — Estrategia de negocio
+%  Diplomado en Ciencia de Datos · FES Acatlán, UNAM · Gen 30 · 2026
+%  Autor: Carlos Armando López Encino
+%  Profesor: Mtro. Fernando Barranco Rodríguez
+% ════════════════════════════════════════════════════════════════════════════
+
+\documentclass[11pt,a4paper]{article}
+
+% ───── Codificación y lenguaje ─────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla,es-noindentfirst]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% ───── Matemáticas ─────────────────────────────────────────────
+\usepackage{amsmath,amssymb}
+\usepackage{siunitx}
+\sisetup{output-decimal-marker={.},group-separator={\,}}
+
+% ───── Geometría y espaciado ───────────────────────────────────
+\usepackage[a4paper,margin=2.5cm,headheight=15pt]{geometry}
+\usepackage{setspace}
+\setstretch{1.15}
+\usepackage{parskip}
+
+% ───── Color e identidad VialAI ────────────────────────────────
+\usepackage{xcolor}
+\definecolor{vialNavyDeep}{HTML}{0B1F3A}
+\definecolor{vialNavy}{HTML}{0F2E4D}
+\definecolor{vialTeal}{HTML}{2EBFA6}
+\definecolor{vialAqua}{HTML}{3BA3BD}
+\definecolor{vialGreen}{HTML}{A3D88F}
+\definecolor{vialAmber}{HTML}{F5B836}
+\definecolor{vialText}{HTML}{1F2937}
+\definecolor{vialMuted}{HTML}{4A5B6D}
+\definecolor{vialBgSoft}{HTML}{F3F6FA}
+
+% ───── Gráficos ────────────────────────────────────────────────
+\usepackage{graphicx}
+\graphicspath{{./}{imagenes_12/}{imagenes_12/imagenes_png/}}
+\usepackage{float}
+
+% ───── Tablas ──────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{colortbl}
+
+% ───── Tipografía de secciones ─────────────────────────────────
+\usepackage{titlesec}
+\titleformat{\section}
+  {\color{vialNavy}\normalfont\Large\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}
+  {\color{vialNavy}\normalfont\large\bfseries}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}
+  {\color{vialTeal}\normalfont\normalsize\bfseries}{\thesubsubsection}{0.5em}{}
+
+% ───── Encabezados y pies ──────────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\color{vialMuted}\small VialAI --- Estrategia de negocio}
+\fancyhead[R]{\color{vialMuted}\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\color{vialTeal}\hrule width\headwidth}
+
+% ───── Cajas de callout ────────────────────────────────────────
+\usepackage[most]{tcolorbox}
+
+\newtcolorbox{tipbox}[1][]{%
+  enhanced, breakable,
+  colback=vialBgSoft, colframe=vialTeal, coltitle=vialNavy,
+  fonttitle=\bfseries, title=#1,
+  boxrule=0.8pt, arc=3mm, left=4mm, right=4mm, top=2mm, bottom=2mm,
+}
+
+\newtcolorbox{keybox}[1][]{%
+  enhanced, breakable,
+  colback=vialNavy!5, colframe=vialNavy, coltitle=white,
+  fonttitle=\bfseries, title=#1,
+  boxrule=1pt, arc=3mm, left=4mm, right=4mm, top=2mm, bottom=2mm,
+}
+
+\newtcolorbox{casebox}[1][]{%
+  enhanced, breakable,
+  colback=vialAmber!10, colframe=vialAmber!80!black, coltitle=vialNavy,
+  fonttitle=\bfseries, title=#1,
+  boxrule=0.8pt, arc=3mm, left=4mm, right=4mm, top=2mm, bottom=2mm,
+}
+
+% ───── Hipervínculos ───────────────────────────────────────────
+\usepackage[colorlinks=true,
+            linkcolor=vialNavy,
+            citecolor=vialTeal,
+            urlcolor=vialAqua]{hyperref}
+
+% ───── Comandos propios ────────────────────────────────────────
+\newcommand{\VialAI}{\textbf{\textcolor{vialTeal}{Vial}\textcolor{vialAmber}{AI}}}
+\newcommand{\ZMVM}{\textsc{zmvm}}
+\newcommand{\CDMX}{\textsc{cdmx}}
+
+% ──────────────────────────────────────────────────────────────
+\begin{document}
+
+% ═══════════════════════ PORTADA ═══════════════════════════════
+\begin{titlepage}
+\centering
+\vspace*{1.5cm}
+
+{\color{vialMuted}\large Diplomado en Ciencia de Datos \textbullet\ Generación 30}\\[0.3em]
+{\color{vialMuted}\small FES Acatlán \textbullet\ UNAM \textbullet\ 2026}\\[2cm]
+
+{\color{vialTeal}\Huge\bfseries UrbanFlow \CDMX\ / \VialAI}\\[0.8em]
+{\color{vialNavy}\LARGE\bfseries Estrategia de negocio}\\[0.5em]
+{\color{vialMuted}\large\itshape Propuesta de valor y modelo de adopción\\
+para el mercado de última milla en la \ZMVM}\\[2.5cm]
+
+{\large\textbf{Carlos Armando López Encino}}\\
+{\small\color{vialMuted}cale.delta@gmail.com}\\[0.6em]
+{\small Profesor: Mtro. Fernando Barranco Rodríguez}\\[2cm]
+
+{\color{vialMuted}\small Proyecto integrador \textbullet\ 18 de abril de 2026}\\[0.4em]
+{\color{vialAqua}\small\url{https://github.com/caledelta/UrbanFlow_CDMX}}
+
+\vfill
+{\color{vialMuted}\footnotesize
+Documento complementario al artículo técnico \texttt{proyecto\_ZMCDMX\_v3.pdf}.
+Cubre el criterio ``Estrategia de negocio'' de la rúbrica de evaluación.}
+\end{titlepage}
+
+\newpage
+\tableofcontents
+\newpage
+
+% ═══════════════════════ §1 EL PROBLEMA ════════════════════════
+\section{El problema de negocio}
+
+La \ZMVM\ ocupa el puesto~\textbf{7} en el TomTom Traffic Index 2024
+entre las ciudades más congestionadas del mundo, con un conductor
+promedio que pierde \num{119} horas al año atrapado en tráfico. Para
+el automovilista casual, esa cifra es molesta. Para el conductor
+profesional de última milla, es \emph{pérdida directa de ingresos}.
+
+El mercado mexicano de entregas a domicilio alcanzó
+\$\num{7.8}~mil~millones de dólares en 2024, con la \ZMVM\ concentrando
+el \SI{38}{\percent} del volumen nacional. Aproximadamente
+\num{180000} conductores de entrega operan diariamente en esta ciudad.
+Su principal dolor: \textbf{no saber cuánto tardará realmente su
+próximo viaje}. Las aplicaciones de navegación existentes entregan una
+estimación puntual (\emph{``llegarás en 23 min''}), pero no comunican
+la incertidumbre de esa cifra. Un conductor que acepta un pedido de
+alta distancia sin saber si tardará 23 minutos o 47 minutos arriesga
+perder bonos por SLA, quedar fuera de la ventana de entrega, o
+encadenar mal sus rutas.
+
+\VialAI\ resuelve exactamente ese vacío: en lugar de una estimación
+puntual, entrega una \textbf{distribución completa de probabilidad}
+---bandas $P_{10}$, $P_{50}$, $P_{90}$--- más un agente conversacional
+que traduce esos números a una recomendación accionable en lenguaje
+natural.
+
+% ═══════════════════════ §2 PROPUESTA DUAL ═════════════════════
+\section{Propuesta de valor: el sistema de acción dual}
+
+\VialAI\ genera valor en dos direcciones simultáneas:
+
+\begin{keybox}[Sistema de acción dual]
+\textbf{Para el conductor profesional:}\\
+Obtiene, antes de salir, una respuesta concreta a la pregunta
+``¿vale la pena salir ahora, o conviene esperar 20 minutos?''.
+El agente \VialAI\ razona sobre la distribución completa y entrega una
+recomendación accionable en lenguaje natural, con la opción de
+recibirla por voz para no dejar de conducir.\\[0.5em]
+\textbf{Para el operador de flota:}\\
+Obtiene un panel que muestra, para cada ruta activa, el Índice de
+Confiabilidad $(IC = (P_{90} - P_{10}) / P_{50})$ en semáforo
+verde/amarillo/rojo. Con ese panel puede decidir cuándo despachar,
+qué rutas evitar, y cuándo aplicar perturbaciones conocidas
+(manifestaciones, cierres del Metro) a su planificación.
+\end{keybox}
+
+\subsection{Para el conductor profesional}
+
+El conductor interactúa con \VialAI\ de tres formas equivalentes:
+
+\begin{enumerate}
+\item \textbf{Manual:} selecciona origen y destino desde menús
+desplegables, configura la hora de salida y pulsa
+\emph{``Predecir trayecto''}.
+\item \textbf{Chat en lenguaje natural:} escribe
+\emph{``¿Cuánto tardo de Polanco al AICM un viernes a las 6 PM
+si hay marcha?''} y el agente razona sobre la petición completa.
+\item \textbf{Voz (manos libres):} pulsa el micrófono, habla la
+consulta y recibe la respuesta sintetizada en
+\textless 30 palabras, comprensible en una sola escucha mientras
+conduce.
+\end{enumerate}
+
+\subsection{Para el operador de flota}
+
+El operador accede a \VialAI\ como herramienta de despacho:
+puede ingresar múltiples rutas del día, activar perturbaciones
+contextuales vigentes (p.~ej., ``marcha 9 de marzo'', ``cierre Línea~12
+del Metro'') y obtener el IC de cada ruta para priorizar el despacho
+de acuerdo con la confiabilidad real, no con el ETA nominal.
+
+% ═══════════════════════ §3 EJEMPLO CONDUCTOR ══════════════════
+\section{Ejemplo de funcionamiento: conductor ``Miguel''}
+
+Se toma como caso de uso prototípico a Miguel, \num{28}~años,
+repartidor para Uber Eats y Rappi, \num{22} entregas diarias en
+promedio, smartphone Android de gama media. Necesita decidir si acepta
+un pedido con origen en \textbf{Polanco} y entrega en
+\textbf{Santa Fe} para las 08:15 de un martes hábil.
+
+\subsubsection{Paso 1: consulta}
+
+Miguel escribe en el chat de \VialAI:
+
+\begin{quote}
+\itshape ``¿Cuánto tardo de Polanco a Santa Fe? Necesito llegar antes
+de las 9. Son las 8:15.''
+\end{quote}
+
+\subsubsection{Paso 2: procesamiento del motor estocástico}
+
+\VialAI\ llama internamente a \texttt{predecir\_tiempo} con los
+parámetros inferidos. El motor Monte Carlo ejecuta \num{10000}
+trayectorias sobre la cadena de Markov calibrada con datos del C5
+\CDMX\ (2018--2024) y las velocidades actuales de TomTom Traffic
+Stats. No hay perturbación activa, por lo que la matriz de transición
+base (día hábil, pico AM) se aplica sin modificar.
+
+\subsubsection{Paso 3: resultado numérico}
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{@{}lrll@{}}
+\toprule
+\rowcolor{vialNavy!10}
+\textbf{Métrica} & \textbf{Valor} & \textbf{Interpretación} & \textbf{Semáforo} \\
+\midrule
+$P_{10}$ (escenario optimista) & 19 min & Llegas en 19 min si el tráfico fluye bien & --- \\
+$P_{50}$ (mediana esperada)    & 27 min & Lo más probable, llegada a las 08:42 & --- \\
+$P_{90}$ (escenario adverso)   & 44 min & Si hay congestión fuerte, llegas a las 08:59 & --- \\
+\midrule
+\rowcolor{vialAmber!15}
+Índice de Confiabilidad        & 0.93 & Alta variabilidad en esta ruta/hora & \textbf{Amarillo} \\
+\bottomrule
+\end{tabular}
+\caption{Resultado del motor Monte Carlo para la ruta Polanco$\to$Santa Fe,
+         martes, 08:15 AM. IC~$= (P_{90} - P_{10}) / P_{50} = (44-19)/27 \approx 0.93$.}
+\label{tab:ejemplo_miguel}
+\end{table}
+
+\subsubsection{Paso 4: recomendación del agente}
+
+\VialAI\ razona sobre la distribución y responde en lenguaje natural:
+
+\begin{casebox}[Respuesta de \VialAI\ a Miguel]
+\itshape
+``Ruta de 17.3~km. El tiempo más probable es 27~minutos, pero hay
+variabilidad alta (IC = amarillo): en el 10\% de los casos tardas
+hasta 44 minutos. \textbf{Si necesitas estar en Santa Fe antes de las
+9, te recomiendo salir ya}: tienes margen ajustado. Si el tráfico está
+fluido, llegas a las 8:42. Si hay congestionamiento, podrías llegar
+justo a las 8:59. No esperes.''
+\end{casebox}
+
+Miguel tiene un diagnóstico preciso. Puede tomar una decisión
+informada, no una apuesta.
+
+% ═══════════════════════ §4 EJEMPLO FLOTA ══════════════════════
+\section{Ejemplo de funcionamiento: operador ``LogísticaMX''}
+
+LogísticaMX opera una flota de \num{50} conductores en la \ZMVM.
+Su gerente de operaciones activa la perturbación
+\emph{``Marcha 9 de marzo''} antes del turno y solicita a \VialAI\
+la evaluación de sus tres rutas críticas del día.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{@{}lrrrrll@{}}
+\toprule
+\rowcolor{vialNavy!10}
+\textbf{Ruta} & $P_{50}$ base & $P_{50}$ con perturbación
+              & $P_{90}$ & IC & \textbf{Semáforo} & \textbf{Acción sugerida} \\
+\midrule
+Centro $\to$ Perisur & 38 min & 51 min & 79 min & 1.37 & \textcolor{red}{\textbf{Rojo}}
+  & Posponer o ruta alterna \\
+Polanco $\to$ AICM   & 29 min & 34 min & 49 min & 0.88 & \textcolor{vialAmber!80!black}{\textbf{Amarillo}}
+  & Salir con \num{20} min extra \\
+Ecatepec $\to$ Vallejo & 22 min & 23 min & 31 min & 0.36 & \textcolor{green!60!black}{\textbf{Verde}}
+  & Despachar con normalidad \\
+\bottomrule
+\end{tabular}
+\caption{Panel de rutas de LogísticaMX con perturbación activa ``Marcha 9 de marzo''.
+         La ruta Centro$\to$Perisur cruza la zona de conflicto; la tercera ruta no
+         se ve afectada.}
+\label{tab:flota}
+\end{table}
+
+Con esta información, el gerente pospone el despacho de la ruta roja
+y asigna buffers de tiempo extra a la amarilla. Ninguna decisión se
+toma a ciegas.
+
+% ═══════════════════════ §5 SEGMENTACIÓN ═══════════════════════
+\section{Segmentación de mercado y modelo de negocio}
+
+\VialAI\ segmenta el mercado en tres niveles con características de
+adopción y disposición de pago distintas:
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.5}
+\begin{tabularx}{\linewidth}{@{}l l X r r@{}}
+\toprule
+\rowcolor{vialNavy!10}
+\textbf{Segmento} & \textbf{Perfil} & \textbf{Propuesta} & \textbf{Universo \ZMVM} & \textbf{Precio} \\
+\midrule
+Tier~1 (base) & Conductor individual & Predicción + agente de voz gratis
+  & \num{180000} conductores & Gratuito \\
+Tier~1 Plus & Conductor individual & Todo lo anterior + voz premium,
+  sin anuncios, historial ampliado
+  & Subconjunto de Tier~1 & \$49 MXN/mes \\
+Tier~2 (B2B) & Operador de flota & Panel de flota, IC por ruta,
+  alertas de perturbación, API de integración
+  & \num{650} operadores formales & \$199 MXN/mes/conductor \\
+Tier~3 (enterprise) & Empresa con SLA contractual & Calibración
+  dedicada, SLA 99.5\%, soporte directo
+  & Decenas de empresas & Cotización personalizada \\
+\bottomrule
+\end{tabularx}
+\caption{Segmentación y modelo de precios de \VialAI. El Tier~1 gratuito
+         sirve como \emph{wedge} de adopción masiva; el Tier~2 es el motor
+         de ingresos principal.}
+\label{tab:tiers}
+\end{table}
+
+La estrategia de adopción es \textbf{freemium con ancla masiva}:
+se construye primero la base de Tier~1 (conductores individuales),
+se genera telemetría de uso consentida para refinar el modelo, y con
+el modelo validado se oferta el Tier~2 a operadores de flota.
+El punto de equilibrio operativo estimado es de
+\textbf{\num{800} usuarios pagos combinados entre Tier~1 Plus y Tier~2}.
+
+% ═══════════════════════ §6 IMPACTO ECONÓMICO ══════════════════
+\section{Cuantificación del impacto económico}
+
+\subsection{Para una PyME de última milla típica (50 conductores)}
+
+Las empresas de entrega de última milla incurren en costos ocultos
+por demoras que no están en el presupuesto visible: bonos de SLA
+pagados al cliente por incumplimiento, re-entregas, sobretiempo del
+conductor y rotación debida a frustración operativa. Estimamos esos
+costos para una PyME con \num{50} conductores activos en la \ZMVM:
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\rowcolor{vialNavy!10}
+\textbf{Concepto} & \textbf{Costo estimado / año} & \textbf{Supuesto} \\
+\midrule
+Penalizaciones SLA (incumplimientos) & \$210\,000 MXN & 3\% de entregas fuera de ventana \\
+Re-entregas por conductor ausente & \$180\,000 MXN & 8 re-entregas/semana × \$430 costo \\
+Sobretiempo no previsto & \$260\,000 MXN & 2 hr/conductor/semana × \$250/hr \\
+\midrule
+\textbf{Sobrecosto total estimado} & \textbf{\$650\,000 MXN} & --- \\
+\midrule\midrule
+Suscripción \VialAI\ Tier~2 (50 conductores) & \$119\,400 MXN & \$199 × 50 × 12 \\
+\textbf{Ahorro neto anual} & \textbf{\$530\,600 MXN} & ROI $\approx$ 445\% \\
+\bottomrule
+\end{tabular}
+\caption{Cálculo de impacto económico para una PyME de última milla con 50 conductores.
+         Cifras basadas en tarifas de SLA de Uber Eats / Rappi 2024 y encuestas
+         del Observatorio Laboral 2024.}
+\label{tab:roi}
+\end{table}
+
+% ═══════════════════════ §7 COMPARATIVA ════════════════════════
+\section{Comparativa competitiva}
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.5}
+\begin{tabularx}{\linewidth}{@{}X c c c c@{}}
+\toprule
+\rowcolor{vialNavy!10}
+\textbf{Capacidad} & \textbf{\VialAI} & \textbf{Google Maps}
+                   & \textbf{Waze} & \textbf{TomTom} \\
+\midrule
+Estimación puntual (ETA) & \checkmark & \checkmark & \checkmark & \checkmark \\
+Bandas de incertidumbre ($P_{10}$/$P_{90}$) & \textbf{\checkmark} & $\times$ & $\times$ & $\times$ \\
+Índice de Confiabilidad & \textbf{\checkmark} & $\times$ & $\times$ & $\times$ \\
+Agente conversacional contextual & \textbf{\checkmark} & $\times$ & $\times$ & $\times$ \\
+Entrada/salida por voz (manos libres) & \textbf{\checkmark} & Parcial & Parcial & $\times$ \\
+Perturbaciones locales \ZMVM\ & \textbf{\checkmark} & $\times$ & Parcial & $\times$ \\
+MAPE validado en rutas \ZMVM & \textbf{11.9\%} & n/d & n/d & 19.0\% \\
+Precio para conductores & Gratis & Gratis & Gratis & Pago \\
+API de integración para flotas & \textbf{\checkmark} & \checkmark & $\times$ & \checkmark \\
+\bottomrule
+\end{tabularx}
+\caption{Comparativa funcional de \VialAI\ contra competidores directos e indirectos.
+         \VialAI\ es el único sistema que cuantifica la incertidumbre del viaje y
+         además supera al líder comercial (TomTom) en precisión de estimación central.}
+\label{tab:comparativa}
+\end{table}
+
+La ventaja competitiva de \VialAI\ no reside en una sola función:
+reside en la \textbf{combinación} de rigor probabilístico (algo que
+ningún competidor ofrece hoy), interfaz de voz específicamente
+diseñada para el contexto del conductor en movimiento, y calibración
+con fuentes de datos locales de la \ZMVM\ que los competidores
+globales no utilizan.
+
+% ═══════════════════════ §8 SIGUIENTES PASOS ═══════════════════
+\section{Siguientes pasos}
+
+El roadmap de los seis meses post-defensa se estructura en tres
+hitos que escalan el sistema desde su estado actual de prototipo
+validado hacia un producto desplegable:
+
+\begin{enumerate}
+\item \textbf{Mes 1--2: validación cuantitativa ampliada.}
+Campaña de campo con $N \geq 500$ viajes etiquetados por exactitud,
+reclutando \num{20}--\num{30} conductores profesionales del Tier~1.
+Recalibración de la matriz de Markov con observaciones reales y
+publicación de resultados con intervalos de confianza estrechos.
+
+\item \textbf{Mes 3--4: versión móvil nativa.}
+Migración de la interfaz web Streamlit a una aplicación Android
+(Flutter o Kivy) apta para montarse en manillar. Integración de GPS
+continuo para eliminar la necesidad de pulsar ``Llegué'' manualmente.
+Calibración de perfil específico para motocicleta.
+
+\item \textbf{Mes 5--6: primer piloto B2B.}
+Despliegue controlado con un operador del Tier~2 (flota de
+\num{20}--\num{50} conductores). Métricas de éxito: reducción de
+demoras fuera de SLA $\geq 15\%$, satisfacción del conductor
+$\geq 4/5$ estrellas, costo por entrega estable o decreciente.
+Formalización del contrato de suscripción y estructura de facturación.
+\end{enumerate}
+
+\begin{tipbox}[Por qué este nicho y no otro]
+El conductor de última milla de la \ZMVM\ cumple simultáneamente tres
+condiciones que ningún otro segmento reúne: (i) el dolor de la
+incertidumbre es \emph{cuantificable en pesos} (bonos de SLA,
+re-entregas), (ii) la interfaz de voz es una \emph{restricción real de
+seguridad}, no un lujo, y (iii) las fuentes abiertas del C5 y TomTom
+cubren bien las zonas donde operan. Ningún otro nicho cumple las tres
+condiciones al mismo tiempo.
+\end{tipbox}
+
+\end{document}
