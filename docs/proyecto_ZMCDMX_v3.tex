@@ -1,0 +1,2050 @@
+% !TEX program = pdflatex
+% ════════════════════════════════════════════════════════════════════════════
+%  UrbanFlow CDMX / VialAI — Artículo del proyecto integrador
+%  Diplomado en Ciencia de Datos · FES Acatlán, UNAM · Gen 30 · 2026
+%  Autor: Carlos Armando López Encino
+%  Profesor: Mtro. Fernando Barranco Rodríguez
+%  Versión v3 — abril 2026
+% ════════════════════════════════════════════════════════════════════════════
+
+\documentclass[11pt,a4paper]{article}
+
+% ───── Codificación y lenguaje ─────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla,es-noindentfirst]{babel}
+\usepackage[round,authoryear]{natbib}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% ───── Matemáticas ─────────────────────────────────────────────
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{bm}
+\usepackage{siunitx}
+\sisetup{output-decimal-marker={.},group-separator={\,}}
+
+% ───── Geometría y espaciado ───────────────────────────────────
+\usepackage[a4paper,margin=2.5cm,headheight=15pt]{geometry}
+\usepackage{setspace}
+\setstretch{1.15}
+\usepackage{parskip}
+
+% ───── Color e identidad VialAI ────────────────────────────────
+\usepackage{xcolor}
+\definecolor{vialNavyDeep}{HTML}{0B1F3A}
+\definecolor{vialNavy}{HTML}{0F2E4D}
+\definecolor{vialTeal}{HTML}{2EBFA6}
+\definecolor{vialAqua}{HTML}{3BA3BD}
+\definecolor{vialGreen}{HTML}{A3D88F}
+\definecolor{vialAmber}{HTML}{F5B836}
+\definecolor{vialText}{HTML}{1F2937}
+\definecolor{vialMuted}{HTML}{4A5B6D}
+\definecolor{vialBgSoft}{HTML}{F3F6FA}
+
+% ───── Gráficos y figuras ──────────────────────────────────────
+\usepackage{graphicx}
+% Rutas donde buscar imágenes (el . es la carpeta del .tex)
+\graphicspath{{./}{graficas_proyecto/imagenes_12/}}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{wrapfig}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,shadows.blur,
+                calc,fit,backgrounds,decorations.pathreplacing,
+                shapes.symbols,shapes.multipart,chains,scopes}
+
+% ───── Tablas ──────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{colortbl}
+
+% ───── Tipografía de secciones ─────────────────────────────────
+\usepackage{titlesec}
+\titleformat{\section}
+  {\color{vialNavy}\normalfont\Large\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}
+  {\color{vialNavy}\normalfont\large\bfseries}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}
+  {\color{vialTeal}\normalfont\normalsize\bfseries}{\thesubsubsection}{0.5em}{}
+
+% ───── Encabezados y pies ──────────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\color{vialMuted}\small VialAI --- Predicción estocástica ZMVM}
+\fancyhead[R]{\color{vialMuted}\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\color{vialTeal}\hrule width\headwidth}
+
+% ───── Cajas de callout ────────────────────────────────────────
+\usepackage[most]{tcolorbox}
+
+\newtcolorbox{tipbox}[1][]{%
+  enhanced, breakable,
+  colback=vialBgSoft, colframe=vialTeal, coltitle=vialNavy,
+  fonttitle=\bfseries, title=#1,
+  boxrule=0.8pt, arc=3mm, left=4mm, right=4mm, top=2mm, bottom=2mm,
+  drop shadow=vialMuted,
+}
+
+\newtcolorbox{keybox}[1][]{%
+  enhanced, breakable,
+  colback=vialNavy!5, colframe=vialNavy, coltitle=white,
+  fonttitle=\bfseries, title=#1,
+  boxrule=1pt, arc=3mm, left=4mm, right=4mm, top=2mm, bottom=2mm,
+}
+
+\newtcolorbox{casebox}[1][]{%
+  enhanced, breakable,
+  colback=vialAmber!10, colframe=vialAmber!80!black, coltitle=vialNavy,
+  fonttitle=\bfseries, title=#1,
+  boxrule=0.8pt, arc=3mm, left=4mm, right=4mm, top=2mm, bottom=2mm,
+}
+
+\newtcolorbox{warnbox}[1][]{%
+  enhanced, breakable,
+  colback=red!5, colframe=red!60!black, coltitle=white,
+  fonttitle=\bfseries, title=#1,
+  boxrule=0.8pt, arc=3mm, left=4mm, right=4mm, top=2mm, bottom=2mm,
+}
+
+% ───── Hipervínculos ───────────────────────────────────────────
+\usepackage[colorlinks=true,
+            linkcolor=vialNavy,
+            citecolor=vialTeal,
+            urlcolor=vialAqua]{hyperref}
+
+% ───── Código ──────────────────────────────────────────────────
+\usepackage{listings}
+\lstdefinestyle{vialcode}{
+  backgroundcolor=\color{vialBgSoft},
+  basicstyle=\ttfamily\footnotesize\color{vialText},
+  keywordstyle=\color{vialNavy}\bfseries,
+  stringstyle=\color{vialTeal},
+  commentstyle=\color{vialMuted}\itshape,
+  frame=single, framesep=5pt, rulecolor=\color{vialTeal},
+  numbers=left, numberstyle=\tiny\color{vialMuted},
+  breaklines=true, showstringspaces=false, captionpos=b,
+}
+\lstset{
+  literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+           {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+           {ñ}{{\~n}}1 {Ñ}{{\~N}}1 {¿}{?`}1 {¡}{!`}1
+}
+
+% ───── Comandos propios ────────────────────────────────────────
+\newcommand{\VialAI}{\textbf{\textcolor{vialTeal}{Vial}\textcolor{vialAmber}{AI}}}
+\newcommand{\ZMVM}{\textsc{zmvm}}
+\newcommand{\CDMX}{\textsc{cdmx}}
+\newcommand{\AICM}{\textsc{aicm}}
+\newcommand{\MAPE}{\text{MAPE}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\Exp}{\mathbb{E}}
+\newcommand{\Var}{\mathrm{Var}}
+
+\begin{document}
+
+% ═══════════════════════ PORTADA ═══════════════════════════════
+\begin{titlepage}
+\centering
+\vspace*{1cm}
+
+{\color{vialMuted}\large Diplomado en Ciencia de Datos \textbullet\ Generación 30}\\[0.3em]
+{\color{vialMuted}\small FES Acatlán \textbullet\ UNAM \textbullet\ 2026}\\[1.2cm]
+
+\includegraphics[width=0.28\textwidth]{Logo_VialAI.png}\\[1em]
+
+{\color{vialTeal}\Huge\bfseries UrbanFlow \CDMX}\\[0.5em]
+{\color{vialMuted}\Large\itshape Inteligencia para la movilidad urbana}\\[1.3cm]
+
+{\color{vialNavy}\Large\bfseries Predicción estocástica de tiempos de viaje\\
+en la Zona Metropolitana del Valle de México:}\\[0.4em]
+{\color{vialNavy}\large un sistema multimodal basado en cadenas de Markov,\\
+simulación Monte Carlo y agentes conversacionales}\\[2cm]
+
+{\large\textbf{Carlos Armando López Encino}}\\
+{\small\color{vialMuted}cale.delta@gmail.com}\\[0.8em]
+{\small Profesor: Mtro. Fernando Barranco Rodríguez}\\[2.3cm]
+
+{\color{vialMuted}\small Proyecto integrador \textbullet\ 18 de abril de 2026}\\[0.4em]
+{\color{vialAqua}\small\url{https://github.com/caledelta/UrbanFlow_CDMX}}
+
+\vfill
+{\color{vialMuted}\footnotesize
+Este documento forma parte del proyecto integrador final del Diplomado
+en Ciencia de Datos. Todo el código, datos de calibración y resultados
+son reproducibles desde el repositorio público.}
+\end{titlepage}
+
+% ---------- PÁGINA EN BLANCO ----------
+\newpage
+\mbox{} % Genera un elemento invisible para que la página no se ignore
+\newpage
+
+% ═══════════════════════ RESUMEN ═══════════════════════════════
+\begin{abstract}
+\noindent
+La Zona Metropolitana del Valle de México concentra a
+\num{21800000} habitantes que pierden en promedio \num{152} horas al año
+atascados en el tráfico, según el índice global de congestión de TomTom.
+Los sistemas actuales de estimación de tiempos de viaje devuelven un
+único número determinista que oculta la variabilidad real del tráfico
+urbano. Este trabajo presenta \VialAI\ (UrbanFlow \CDMX), un sistema
+de predicción \emph{probabilística} que combina cadenas de Markov
+calibradas con datos reales del C5 \CDMX\ y TomTom Traffic Stats con
+simulación Monte Carlo vectorizada ($N=\num{10000}$ trayectorias),
+expuesto al usuario final mediante una interfaz multimodal que acepta
+entrada por voz en español mexicano y razona con un agente basado en
+Claude 4.6 dotado de seis herramientas especializadas. La arquitectura
+está diseñada con \emph{degradación graceful} en tres capas (transcripción
+de voz, compresión semántica con LLM y síntesis de voz) para garantizar
+resiliencia ante fallas de infraestructura externa. Los resultados
+preliminares sobre una muestra de \num{30} rutas de campo en la \ZMVM\
+reportan un MAPE del \SI{11.9}{\percent} en la mediana predicha
+(contra \SI{19.0}{\percent} del ETA de TomTom, una ventaja de
+\SI{7.1}{pp}) y una cobertura empírica del \SI{93.3}{\percent} para la
+banda nominal P10--P90. Se discute el nicho B2B de conductores de
+última milla y se proyecta una campaña de validación cuantitativa con
+$N \geq \num{500}$ para la siguiente iteración.
+
+\vspace{0.4em}
+\noindent\textbf{Palabras clave:} predicción estocástica, cadenas de
+Markov, Monte Carlo, tráfico urbano, \ZMVM, agentes conversacionales,
+interfaz por voz, Streamlit, Claude, degradación \emph{graceful}.
+\end{abstract}
+
+\begin{abstract}\selectlanguage{english}
+\noindent
+The Mexico City Metropolitan Area is home to \num{21.8} million
+inhabitants who lose an average of \num{152} hours per year to
+traffic congestion, according to TomTom's global congestion index.
+Current travel-time estimation systems return a single deterministic
+number that hides the intrinsic variability of urban traffic. This
+work presents \textbf{VialAI} (UrbanFlow CDMX), a \emph{probabilistic}
+prediction system combining Markov chains calibrated with real data
+from Mexico City's C5 emergency service and TomTom Traffic Stats
+with vectorised Monte Carlo simulation ($N=\num{10000}$ trajectories),
+exposed to end users via a multimodal interface that accepts voice
+input in Mexican Spanish and reasons through a Claude 4.6-based agent
+equipped with six specialised tools. The architecture features
+\emph{graceful degradation} across three layers (speech-to-text,
+semantic-compression LLM, and text-to-speech) to ensure resilience
+against external infrastructure failures. Preliminary results on a
+\num{30}-route field sample in the metropolitan area report an
+\SI{11.9}{\percent} MAPE on the predicted median (versus
+\SI{19.0}{\percent} for TomTom's ETA, a \SI{7.1}{pp} advantage) and an
+empirical coverage of \SI{93.3}{\percent} for the nominal P10--P90
+band. We discuss the B2B niche of last-mile drivers and outline a
+quantitative validation campaign with $N \geq \num{500}$ for the
+next iteration.
+
+\vspace{0.4em}
+\noindent\textbf{Keywords:} stochastic prediction, Markov chains,
+Monte Carlo, urban traffic, Mexico City, conversational agents,
+voice interface, Streamlit, Claude, graceful degradation.
+\selectlanguage{spanish}\end{abstract}
+
+\vspace{1em}
+\noindent\hrulefill
+
+% ---------- PÁGINA EN BLANCO ----------
+\newpage
+\mbox{} % Genera un elemento invisible para que la página no se ignore
+
+\newpage
+\tableofcontents
+\newpage
+
+% ═══════════════════════ §1 INTRODUCCIÓN ═══════════════════════
+\section{Introducción}
+\label{sec:intro}
+
+\subsection{El problema: \CDMX\ como laboratorio de congestión urbana}
+
+La Ciudad de México y su zona metropolitana constituyen uno de los
+laboratorios más demandantes del mundo para el estudio de la
+movilidad urbana. Con una densidad de \num{5966} habitantes por
+kilómetro cuadrado en la \CDMX\ propiamente dicha
+\citep{inegi2024densidad}, una flota vehicular que supera los
+\num{5800000} unidades registradas \citep{semovi2024parque} y una
+infraestructura vial diseñada originalmente para la mitad de esa
+demanda, el resultado es predecible y persistente: la \ZMVM\ ocupa
+recurrentemente los primeros diez lugares del ranking global de
+ciudades más congestionadas \citep{tomtom2024index}.
+
+La Figura~\ref{fig:ranking} resume el posicionamiento relativo de la
+\CDMX\ contra otras megalópolis comparables.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.88\textwidth]{fig1_congestion_ranking.png}
+\caption{Ranking de congestión urbana: tiempo promedio perdido al
+año por conductor en horas (fuente: TomTom Traffic Index, edición
+\num{2024}). La \CDMX\ pierde \num{152} horas anuales por
+conductor, equivalente a \num{6.3} días completos.}
+\label{fig:ranking}
+\end{figure}
+
+Detrás de ese número agregado se esconde una realidad más problemática
+para quien tiene que tomar decisiones concretas de ruta y horario.
+La congestión no es simplemente alta: es \textbf{altamente variable}.
+Un trayecto Polanco--\AICM\ de \num{13} kilómetros puede tomar
+\num{18} minutos a las \num{6} de la mañana de un domingo y
+\num{72} minutos a las \num{19} de un jueves lluvioso. Esa
+volatilidad hace que las herramientas tradicionales de estimación
+de tiempo de viaje fallen en la pregunta que realmente importa:
+no ``\emph{¿cuánto tardaré?}'' sino ``\emph{¿cuánto puedo tardar
+en el peor caso razonable?}''
+
+\subsection{¿Por qué inteligencia artificial, aprendizaje automático,
+cadenas de Markov y Monte Carlo \emph{juntos}?}
+\label{sec:por-que-juntos}
+
+La predicción de tiempos de viaje se ha abordado históricamente desde
+tres familias de técnicas: modelos estadísticos clásicos (regresión,
+series temporales), aprendizaje supervisado sobre trayectorias
+históricas (GBM, redes neuronales recurrentes) y métodos de
+simulación discreta para sistemas de tráfico. Cada familia captura
+una pieza del fenómeno, pero ninguna aislada responde bien a la
+pregunta del intervalo de incertidumbre contextualizado.
+
+\VialAI\ combina deliberadamente cuatro paradigmas complementarios:
+
+\begin{keybox}[Las cuatro piezas del razonamiento de VialAI]
+\textbf{\textcolor{vialTeal}{Cadenas de Markov}} capturan la
+estructura dinámica del tráfico urbano modelándolo como un proceso
+estocástico de tres estados (fluido, moderado, congestionado) con
+matrices de transición calibradas por hora del día y día de la
+semana. Proporcionan la física probabilística del sistema.\\[0.3em]
+\textbf{\textcolor{vialTeal}{Simulación Monte Carlo}} permite
+propagar la incertidumbre de cada transición a lo largo del trayecto
+completo. Al generar $N = \num{10000}$ trayectorias independientes
+y calcular percentiles, obtenemos una distribución empírica del
+tiempo de viaje en vez de un valor puntual.\\[0.3em]
+\textbf{\textcolor{vialAmber}{Aprendizaje automático}} calibra las
+probabilidades de transición desde datos reales: velocidades
+históricas de TomTom Traffic Stats, incidentes del C5 \CDMX\ y
+condiciones meteorológicas de OpenWeatherMap. Esto convierte el
+modelo teórico en un modelo ajustado a la realidad operativa de la
+\ZMVM.\\[0.3em]
+\textbf{\textcolor{vialAmber}{Inteligencia artificial generativa}}
+(Claude Opus 4.6 y Haiku 4.5) actúa como capa de interpretación
+semántica: traduce lenguaje natural del conductor a invocaciones
+estructuradas de las seis herramientas del sistema, inyecta contexto
+de lugares personalizados y comprime la respuesta matemática en una
+oración hablable de menos de \num{30} palabras.
+\end{keybox}
+
+El valor emerge de la \emph{composición}. Las cadenas de Markov sin
+calibración ML producirían predicciones académicamente correctas
+pero operativamente inútiles. El ML sin estructura estocástica
+produciría puntos estimados sin banda de incertidumbre. Monte Carlo
+sin agente produciría intervalos rigurosos que el conductor no puede
+consumir mientras maneja. Y un agente conversacional sin motor
+matemático sería un chatbot que alucina números. Juntas, estas
+cuatro capas conforman un sistema que es \emph{matemáticamente
+riguroso}, \emph{empíricamente calibrado}, \emph{operativamente
+accionable} y \emph{accesible al usuario final}.
+
+\subsubsection*{Un caso ilustrativo: Miguel, repartidor de última
+milla}
+
+\begin{casebox}[El conductor de última milla real]
+\small\noindent
+Son las 18:40 de un miércoles lluvioso. Miguel acaba de
+entregar un pedido en Polanco y acepta uno nuevo con destino en
+Iztapalapa. La aplicación le muestra un ETA de \num{42} minutos.
+Miguel sabe por experiencia que ese número es engañoso: a veces ha
+tardado \num{35}, a veces \num{70}. Cuando acepta, apuesta su bono
+por entregas a tiempo contra una distribución que no conoce.
+\VialAI\ le responde con voz \emph{``Son aproximadamente
+\num{12.4} kilómetros, tardarás unos \num{58} minutos, pero la banda
+realista va de \num{44} a \num{78} con lluvia moderada en
+Circuito Interior''}. Esa frase, que se genera en menos de
+\num{4} segundos desde que Miguel termina de hablar, contiene el
+\emph{valor} agregado del sistema: la mediana contextualizada
+(P50), la banda P10--P90 que enmarca la incertidumbre y la razón
+dominante (\emph{lluvia en Circuito}) que lo explica.
+\end{casebox}
+
+Miguel es el usuario canónico de este trabajo. No es un ingeniero
+de software, no va a tocar un botón mientras maneja, y cada minuto
+de error en la estimación le cuesta dinero real o seguridad
+personal. Diseñar para Miguel ha sido la restricción de diseño
+dominante.
+
+\subsection{Hipótesis, objetivos y contribuciones}
+
+\textbf{Hipótesis.} Es posible construir un sistema de predicción
+de tiempos de viaje para la \ZMVM\ que (i)~reporte un intervalo
+de confianza calibrado empíricamente, (ii)~integre fuentes
+heterogéneas de datos en tiempo real y cuasi-tiempo-real,
+(iii)~sea consultable por voz natural en español mexicano, y
+(iv)~opere en presencia de fallas de servicios externos, todo con
+latencia inferior a \num{5} segundos por consulta y desplegable
+en hardware de gama media.
+
+\textbf{Objetivos.}
+
+\begin{enumerate}
+\item Formalizar el problema como un proceso estocástico de tres
+estados calibrado con datos operativos.
+\item Implementar simulación Monte Carlo vectorizada con
+$N \geq \num{10000}$ y evaluar convergencia.
+\item Construir un pipeline de ingesta para cinco fuentes de datos
+heterogéneas.
+\item Diseñar un agente conversacional con seis herramientas que
+traduzca lenguaje natural a llamadas estructuradas.
+\item Exponer la funcionalidad mediante una interfaz multimodal
+(voz, texto, clic) con arquitectura de tres capas con
+degradación \emph{graceful}.
+\item Validar empíricamente el sistema contra el ETA comercial de
+referencia (TomTom Routing).
+\end{enumerate}
+
+\textbf{Contribuciones.} Este trabajo aporta: (1)~una
+implementación abierta y reproducible del pipeline completo;
+(2)~una calibración empírica de la matriz de transición para tres
+corredores de la \ZMVM; (3)~evidencia preliminar ($N=30$) de una
+mejora de \SI{7.1}{pp} en MAPE respecto al estado del arte
+comercial; (4)~una arquitectura de voz de tres capas con
+degradación \emph{graceful} documentada como patrón reutilizable;
+y (5)~un marco de referencia para monetización B2B orientado a
+servicios de última milla.
+
+\subsection{Organización del documento}
+
+La Sección~\ref{sec:identidad} describe la identidad y estructura
+del proyecto, incluyendo el pipeline visual completo y el stack
+tecnológico. La Sección~\ref{sec:arte} revisa el estado del arte
+y posiciona las contribuciones. La Sección~\ref{sec:nicho}
+caracteriza el nicho de mercado y el perfil del usuario objetivo.
+La Sección~\ref{sec:datos} detalla las fuentes de datos y sus
+flujos de ingesta. Las Secciones~\ref{sec:modelo} y
+\ref{sec:perturbaciones} desarrollan el motor estocástico y el
+tratamiento de perturbaciones. La Sección~\ref{sec:agente}
+presenta el agente conversacional. La Sección~\ref{sec:voz}
+expone la arquitectura de voz multimodal. La
+Sección~\ref{sec:app} describe la aplicación web como producto
+entregable. La Sección~\ref{sec:validacion} reporta los
+resultados empíricos. La Sección~\ref{sec:futuro} discute
+limitaciones y trabajo futuro. La Sección~\ref{sec:conclusiones}
+cierra con conclusiones.
+
+% ═══════════════════════ §2 IDENTIDAD ══════════════════════════
+\section{Identidad y estructura del proyecto}
+\label{sec:identidad}
+
+\subsection{Marca e identidad visual}
+
+\VialAI\ nace como un proyecto de Diplomado pero está diseñado con
+la ambición de sobrevivir más allá del entregable académico. Su
+identidad visual, que aparece en el logotipo de la portada, está
+construida alrededor de tres ideas: (i)~la \emph{intersección}
+como metáfora de la ruta que converge desde múltiples orígenes
+posibles (el símbolo en forma de $\vee$); (ii)~la \emph{movilidad
+inteligente} como promesa de producto (el gradiente del verde-agua
+al verde-lima); y (iii)~la \emph{confianza técnica} como soporte
+institucional (el fondo azul marino profundo).
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+% Fondo
+\fill[vialNavyDeep, rounded corners=4pt] (0,0) rectangle (15,2.6);
+% Muestras de color con nombre
+\foreach \clr/\name/\hex/\x in {%
+  vialNavyDeep/Fondo profundo/0B1F3A/0.3,
+  vialNavy/Navy principal/0F2E4D/2.8,
+  vialTeal/Verde-agua/2EBFA6/5.3,
+  vialAqua/Azul agua/3BA3BD/7.8,
+  vialGreen/Verde suave/A3D88F/10.3,
+  vialAmber/Ambar marca/F5B836/12.8%
+}{%
+  \fill[\clr, rounded corners=3pt] (\x,0.4) rectangle (\x+2.0,2.0);
+  \node[white, font=\scriptsize\bfseries, align=center] at (\x+1.0,1.4) {\name};
+  \node[white!80, font=\tiny\ttfamily] at (\x+1.0,0.8) {\#\hex};
+}
+\end{tikzpicture}
+\caption{Paleta cromática oficial de \VialAI. Los tres tonos fríos
+(navy, teal, aqua) se emplean en elementos estructurales y de
+datos. Los dos tonos cálidos (verde suave y ámbar) se reservan
+para destacar acción del usuario y estados positivos del sistema.}
+\label{fig:paleta}
+\end{figure}
+
+\subsection{Pipeline completo del sistema}
+
+La Figura~\ref{fig:pipeline} sintetiza la arquitectura end-to-end.
+El pipeline se lee de izquierda (entrada del usuario) a derecha
+(respuesta accionable) y distingue cuatro capas funcionales
+claramente delimitadas.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  node distance=0.7cm and 1.0cm,
+  layer/.style={rectangle, rounded corners=3pt, draw=vialNavy,
+                fill=vialNavy!6, minimum width=2.7cm, minimum height=1.2cm,
+                align=center, font=\small, drop shadow=vialMuted},
+  voice/.style={layer, fill=vialTeal!15, draw=vialTeal},
+  data/.style={layer, fill=vialAqua!15, draw=vialAqua},
+  core/.style={layer, fill=vialAmber!20, draw=vialAmber!80!black},
+  salida/.style={layer, fill=vialGreen!25, draw=vialGreen!60!black},
+  arr/.style={-Latex, line width=0.8pt, draw=vialNavy},
+  dashedarr/.style={-Latex, line width=0.6pt, draw=vialMuted, dashed},
+]
+% Col 1: Entrada
+\node[voice] (voz) {\textbf{Voz}\\ \footnotesize faster-whisper};
+\node[voice, below=of voz] (chat) {\textbf{Chat}\\ \footnotesize texto libre};
+\node[voice, below=of chat] (manual) {\textbf{Manual}\\ \footnotesize mapa + selectbox};
+
+% Col 2: Agente
+\node[core, right=1.5cm of chat] (agente) {\textbf{Agente}\\ \textbf{VialAI}\\
+  \footnotesize Claude 4.6\\ \footnotesize + 6 tools};
+
+% Col 3: Datos
+\node[data, right=1.5cm of agente, yshift=1.6cm] (tomtom) {TomTom\\ \footnotesize Traffic + Routing};
+\node[data, right=1.5cm of agente] (c5) {C5 \CDMX\\ \footnotesize CKAN API};
+\node[data, right=1.5cm of agente, yshift=-1.6cm] (owm) {OpenWeather\\ \footnotesize clima actual};
+
+% Col 4: Motor
+\node[core, right=1.5cm of c5] (motor) {\textbf{Motor}\\ \textbf{estocástico}\\
+  \footnotesize Markov + MC\\ $N=\num{10000}$};
+
+% Col 5: Salida
+\node[salida, right=1.5cm of motor, yshift=1cm] (ui) {\textbf{UI web}\\ \footnotesize Streamlit + Folium};
+\node[salida, right=1.5cm of motor, yshift=-1cm] (tts) {\textbf{Voz saliente}\\ \footnotesize TTS + Haiku};
+
+% Flechas entrada -> agente
+\draw[arr] (voz.east) -- (agente.west);
+\draw[arr] (chat.east) -- (agente.west);
+\draw[arr] (manual.east) -- ($(agente.west)+(0,-0.2)$);
+
+% Flechas agente -> datos
+\draw[arr] (agente.east) -- (tomtom.west);
+\draw[arr] (agente.east) -- (c5.west);
+\draw[arr] (agente.east) -- (owm.west);
+
+% Flechas datos -> motor
+\draw[arr] (tomtom.east) -- (motor.west);
+\draw[arr] (c5.east) -- (motor.west);
+\draw[arr] (owm.east) -- (motor.west);
+
+% Flechas motor -> salida
+\draw[arr] (motor.east) -- (ui.west);
+\draw[arr] (motor.east) -- (tts.west);
+
+% Retorno de TTS al usuario
+\draw[dashedarr] (tts.east) to[bend right=60]
+  node[right=5pt, font=\scriptsize, text=vialMuted] {}
+  ($(voz.east)+(8,0)$) -- (voz.east);
+\end{tikzpicture}
+\caption{Pipeline funcional de \VialAI. Entrada multimodal
+(izquierda) se traduce en llamadas estructuradas por el agente
+(centro), que a su vez consulta fuentes heterogéneas y alimenta
+el motor estocástico (centro-derecha) cuyo resultado se expone al
+usuario en dos canales: visual vía Streamlit y auditivo vía TTS
+resumido con Claude Haiku (derecha). La flecha punteada indica el
+loop auditivo de vuelta al conductor.}
+\label{fig:pipeline}
+\end{figure}
+
+\subsection{Stack tecnológico y herramientas}
+\label{sec:stack}
+
+La selección de herramientas siguió tres criterios: (i)~madurez
+productiva comprobada, (ii)~reproducibilidad desde el repositorio
+público, y (iii)~coherencia con el ecosistema del Diplomado.
+La Tabla~\ref{tab:stack} resume el stack completo.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{@{}l l X@{}}
+\toprule
+\rowcolor{vialNavy!10}
+\textbf{Capa} & \textbf{Herramienta} & \textbf{Rol en el proyecto} \\
+\midrule
+Lenguaje base & Python \num{3.12} & Todo el motor estocástico, agente,
+ingesta y orquestación. Elegido por madurez del ecosistema
+\texttt{numpy}/\texttt{scipy} y por ser el estándar del Diplomado.\\
+Exploración & Google Colab & Prototipado inicial del modelo Markov
+y visualización de distribuciones durante la fase de diseño. El
+notebook de referencia está versionado en \texttt{notebooks/}.\\
+UI web & Streamlit \num{1.56} & Interfaz principal del usuario final.
+Elegido por rapidez de iteración y por ofrecer hot-reload sobre
+código Python sin separar front de back.\\
+Mapa & Folium + Leaflet & Visualización geoespacial interactiva.
+Permite renderizar rutas reales de TomTom Routing como polilíneas
+coloreadas y marcadores de lugares guardados con iconografía
+contextual.\\
+Agente & Claude Opus \num{4.6} & Motor de razonamiento del agente
+VialAI con \emph{tool use} en bucle cerrado. Elegido por capacidad
+superior en tareas de orquestación de herramientas y generación en
+español mexicano.\\
+Compresión & Claude Haiku \num{4.5} & Generación del resumen
+hablable (máx.\ \num{30} palabras) a partir de la respuesta larga
+con markdown del agente. Seleccionado por latencia ($<$\SI{1}{s})
+y costo ($\sim$\SI{0.0001}USD por consulta).\\
+STT primario & faster-whisper & Transcripción local y gratuita
+de audio a texto. Corre en CPU sin dependencia de APIs externas.\\
+STT respaldo & Whisper-1 (OpenAI) & Alternativa cloud con mayor
+calidad de transcripción para casos donde el usuario active la
+ruta premium.\\
+TTS primario & OpenAI tts-1 (voz \emph{nova}) & Síntesis de voz
+natural para la respuesta hablada. Calidad de demo.\\
+TTS respaldo & pyttsx3 (SAPI5) & Síntesis local offline para
+resiliencia ante fallas del TTS cloud.\\
+Testing & pytest \num{7.4} & \num{720}+ tests automatizados cubren
+motor, ingesta, agente, persistencia y voz.\\
+Control de versiones & Git + GitHub & Historial público completo
+del desarrollo. Cada hito está referenciado por hash de commit.\\
+Asistencia IA & Claude Code & Herramienta de pair programming
+usada durante el desarrollo para refactors estructurales y
+generación de tests. Todas las decisiones de diseño son del autor;
+la asistencia se empleó principalmente para acelerar iteración sin
+sacrificar revisión crítica.\\
+\bottomrule
+\end{tabularx}
+\caption{Stack tecnológico de \VialAI. La selección prioriza
+herramientas abiertas, reproducibles y con alternativas de
+respaldo cuando el componente depende de servicios externos.}
+\label{tab:stack}
+\end{table}
+
+\begin{tipbox}[Principio de selección de herramientas]
+Cada componente con dependencia externa (voz, LLM, rutas) tiene
+una alternativa local o de respaldo implementada y probada. Esta
+decisión de diseño es la base de la arquitectura de
+\emph{degradación graceful} que se detalla en la
+Sección~\ref{sec:voz}.
+\end{tipbox}
+
+% ═══════════════════════ §3 ESTADO DEL ARTE ════════════════════
+\section{Estado del arte y diferenciación}
+\label{sec:arte}
+
+La predicción de tiempos de viaje urbanos es uno de los problemas
+más estudiados en ingeniería del tráfico y ciencia de datos
+geoespaciales. Esta sección posiciona a \VialAI\ contra tres
+familias de soluciones preexistentes y explicita en qué ejes se
+diferencia.
+
+\subsection{Familia 1: ETAs comerciales deterministas}
+
+Las aplicaciones de navegación masivas (Google Maps, Waze, Apple
+Maps, TomTom) y las \textsc{api} de routing que las respaldan
+entregan al usuario final un \emph{único número} como tiempo
+estimado de arribo. Internamente, esos servicios sí modelan
+distribuciones de velocidad segmento a segmento, pero el producto
+expuesto colapsa la incertidumbre a la mediana o a un promedio
+ponderado \citep{google2023eta,tomtom2024routing}.
+
+Para un usuario casual esto es suficiente. Para un conductor
+profesional con incentivos económicos atados a entregas a tiempo,
+la ocultación de la varianza es un problema estructural: el ETA
+de \num{42} minutos que Google muestra puede ocultar una
+distribución con $\sigma = 15$ minutos, lo que se traduce en una
+probabilidad no trivial de llegar entre \num{27} y \num{57}
+minutos. Esa diferencia define si el conductor cobra bono o no.
+
+\subsection{Familia 2: Modelos académicos de predicción probabilística}
+
+En la literatura académica, la predicción de tiempos de viaje con
+cuantificación de incertidumbre se ha abordado con regresión de
+cuantiles \citep{koenker2005quantile}, redes neuronales bayesianas
+\citep{gal2016dropout}, modelos de mezcla gaussiana
+\citep{jenelius2013travel} y, más recientemente, transformers
+espaciotemporales con salida probabilística
+\citep{li2023stformer}.
+
+Estos trabajos son técnicamente sólidos pero adolecen de tres
+limitaciones operativas para el caso de uso que \VialAI\ aborda:
+
+\begin{enumerate}
+\item Requieren entrenamiento supervisado sobre conjuntos masivos
+de trayectorias \textsc{gps} que no están disponibles públicamente
+para la \ZMVM.
+\item Su interpretación de la incertidumbre es estadística pero
+no \emph{explicativa}: un intervalo amplio no viene acompañado de
+la causa dominante (\emph{llueve}, \emph{hay un evento deportivo}).
+\item Carecen de una capa de interfaz natural al usuario final;
+operan como modelos de \emph{backend} que otros ingenieros deben
+integrar.
+\end{enumerate}
+
+\subsection{Familia 3: Sistemas basados en simulación microscópica}
+
+Los simuladores de tráfico clásicos (\textsc{sumo}, Vissim,
+Aimsun) modelan explícitamente cada vehículo y sus interacciones
+\citep{lopez2018sumo}. Son extraordinariamente precisos para
+estudios de planeación urbana de largo plazo pero requieren
+modelado detallado de la red vial completa, calibración intensiva
+con aforos vehiculares, y tiempos de ejecución que los hacen
+inviables para predicciones en línea con latencia inferior a
+\num{5} segundos.
+
+\subsection{Posición de VialAI en el espacio de soluciones}
+
+\VialAI\ ocupa deliberadamente un punto distinto en el espacio
+de trade-offs que ninguna de las tres familias anteriores cubre
+simultáneamente. La Tabla~\ref{tab:posicionamiento} lo resume.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\linewidth}{@{}X c c c c@{}}
+\toprule
+\rowcolor{vialNavy!10}
+\textbf{Eje de diferenciación} & \textbf{ETA comercial} &
+\textbf{ML académico} & \textbf{Simuladores} &
+\textbf{\VialAI} \\
+\midrule
+Intervalo probabilístico P10--P90 & \textcolor{vialAmber}{parcial} &
+\textcolor{vialGreen}{sí} & \textcolor{vialGreen}{sí} &
+\textcolor{vialGreen}{\textbf{sí}} \\
+Explicación causal de la varianza & \textcolor{red}{no} &
+\textcolor{red}{no} & \textcolor{vialAmber}{parcial} &
+\textcolor{vialGreen}{\textbf{sí}} \\
+Interfaz natural (voz/chat) & \textcolor{red}{no} &
+\textcolor{red}{no} & \textcolor{red}{no} &
+\textcolor{vialGreen}{\textbf{sí}} \\
+Latencia $<\SI{5}{s}$ por consulta &
+\textcolor{vialGreen}{sí} & \textcolor{vialAmber}{parcial} &
+\textcolor{red}{no} & \textcolor{vialGreen}{\textbf{sí}} \\
+Reproducible desde repositorio público &
+\textcolor{red}{no} & \textcolor{vialAmber}{parcial} &
+\textcolor{vialGreen}{sí} & \textcolor{vialGreen}{\textbf{sí}} \\
+Degradación \emph{graceful} documentada &
+\textcolor{red}{no} & \textcolor{red}{no} & \textcolor{red}{no} &
+\textcolor{vialGreen}{\textbf{sí}} \\
+\bottomrule
+\end{tabularx}
+\caption{Posicionamiento de \VialAI\ contra las tres familias
+dominantes de soluciones. El espacio que el sistema ocupa es la
+intersección no trivial entre predicción probabilística,
+explicabilidad causal e interfaz natural para el usuario final.}
+\label{tab:posicionamiento}
+\end{table}
+
+El valor diferencial no reside en ninguna de las capas
+individualmente ---cada una existe en el estado del arte--- sino
+en su \emph{composición coherente} orientada al caso de uso del
+conductor de última milla. La Sección~\ref{sec:nicho} justifica
+por qué ese nicho específico merece una solución diseñada desde
+sus restricciones reales.
+
+% ═══════════════════════ §4 NICHO DE MERCADO ═══════════════════
+\section{Nicho de mercado y perfil del usuario}
+\label{sec:nicho}
+
+\subsection{La economía de última milla en México}
+
+La \emph{última milla} es el tramo final de la cadena logística:
+el trayecto entre el último centro de distribución y el cliente
+final. Concentra entre el \SI{40}{\percent} y el
+\SI{60}{\percent} del costo logístico total de una entrega
+urbana \citep{insider2023lastmile}, y su eficiencia depende
+críticamente de la capacidad del conductor para estimar tiempos y
+tomar decisiones de ruta con información incompleta.
+
+En México, el mercado de entregas a domicilio creció de
+\num{2.1} mil millones de dólares en \num{2019} a más de
+\num{7.8} mil millones en \num{2024}, con la \ZMVM\ concentrando
+aproximadamente el \SI{38}{\percent} del volumen nacional
+\citep{amvo2024entregas}. La Figura~\ref{fig:mercado} muestra la
+composición de este mercado por tipo de operador.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.88\textwidth]{fig5_mercado_ultima_milla.png}
+\caption{Mercado de última milla en México, \num{2024}. Crecimiento
+compuesto de \SI{29.9}{\percent} anual en el periodo
+\num{2019}--\num{2024}, con reconfiguración hacia operadores
+especializados de tecnología (\emph{delivery apps}) que concentran
+el \SI{52}{\percent} del volumen (fuente: elaboración propia con
+datos de \textsc{amvo} y \textsc{inegi}).}
+\label{fig:mercado}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.88\textwidth]{fig5b_zmvm_compradores.png}
+\caption{Embudo de adopción de servicios de última milla en la
+\ZMVM: de \num{21.8} millones de habitantes, \num{14.6} millones
+son económicamente activos, \num{9.2} millones compran en línea
+al menos mensualmente, y \num{3.7} millones son usuarios activos
+de apps de entrega a domicilio en \num{2024}. La pirámide de
+concentración explica por qué la presión competitiva entre
+repartidores por rutas eficientes es intensa en la zona.}
+\label{fig:embudo}
+\end{figure}
+
+\subsection{Perfil del conductor objetivo}
+\label{sec:perfil}
+
+El usuario objetivo de \VialAI\ no es el automovilista ocasional
+ni el conductor de uso personal. Es el profesional que genera
+ingresos conduciendo dentro de la \ZMVM. Con base en encuestas
+sectoriales recientes
+\citep{amlo2023repartidores,observatorio2024trabajo}, su perfil
+demográfico y operativo se resume así:
+
+\begin{keybox}[Perfil del conductor de última milla en la \ZMVM]
+\small
+\begin{tabular}{@{}p{0.28\linewidth} p{0.66\linewidth}@{}}
+\textbf{Edad} &
+\num{21}--\num{42} años (mediana \num{29}), \SI{84}{\percent}
+hombres, \SI{16}{\percent} mujeres (proporción creciente).\\
+\textbf{Escolaridad} &
+Bachillerato completo \SI{61}{\percent}; licenciatura trunca o
+completa \SI{27}{\percent}; secundaria o menos \SI{12}{\percent}.\\
+\textbf{Vehículo} &
+Motocicleta \SI{58}{\percent}; automóvil propio \SI{29}{\percent};
+bicicleta eléctrica \SI{13}{\percent}.\\
+\textbf{Plataformas} &
+\SI{68}{\percent} trabaja para más de una app simultáneamente
+(Uber Eats, DiDi Food, Rappi, pedidos directos de restaurantes).\\
+\textbf{Jornada} &
+\num{9.6} horas en promedio, \num{5}--\num{6} días a la semana,
+\num{18}--\num{28} entregas diarias.\\
+\textbf{Ingreso} &
+Neto promedio \$\num{9800} a \$\num{14500} MXN mensuales,
+fuertemente dependiente de bonos por entregas a tiempo.\\
+\textbf{Dispositivo} &
+Smartphone Android de gama media-baja (\SI{82}{\percent}),
+frecuentemente montado en el manubrio. Plan de datos prepago.\\
+\textbf{Pain points} &
+(1)~desconocer cuánto tardará realmente un viaje,
+(2)~perder bonos por demoras imprevistas,
+(3)~dificultad de operar la app mientras maneja,
+(4)~rutas subóptimas sugeridas por las aplicaciones.\\
+\end{tabular}
+\end{keybox}
+
+Este perfil explica varias decisiones de diseño de \VialAI\ que
+de otra forma parecerían arbitrarias:
+
+\begin{itemize}
+\item \textbf{Entrada por voz como prioridad de primera clase.}
+Un conductor en motocicleta \emph{no puede} teclear mientras
+maneja. La voz no es una característica adicional: es el único
+canal seguro disponible mientras el vehículo está en movimiento.
+\item \textbf{Salida sintetizada a un enunciado corto.} La
+respuesta hablada debe ser comprensible en una sola escucha,
+mientras el conductor mantiene atención en el tráfico. De ahí la
+compresión semántica con Haiku a menos de \num{30} palabras
+(Sección~\ref{sec:voz}).
+\item \textbf{Gratuidad del backend STT.} Un conductor que gana
+\$\num{12000} pesos al mes no va a pagar una suscripción para
+saber cuánto tardará. De ahí la elección de
+\texttt{faster-whisper} local como backend primario.
+\item \textbf{Interfaz visual minimalista sobre Android.} Los
+componentes deben ser legibles a distancia de brazo sobre una
+pantalla de \num{6} pulgadas con reflejo solar y vibración del
+manillar.
+\item \textbf{Trabajo en modo resiliente.} La cobertura celular
+en la \ZMVM\ es heterogénea; el sistema debe degradar
+funcionalmente en zonas con \textsc{4g} débil sin fallar
+completamente.
+\end{itemize}
+
+\subsection{Protocolo de validación cualitativa propuesto}
+
+Para validar cuantitativamente que el problema que \VialAI\ aborda
+es efectivamente percibido como crítico por el perfil objetivo,
+se propone una campaña de validación mixta durante la siguiente
+iteración del proyecto. El protocolo contempla dos instrumentos
+complementarios:
+
+\begin{enumerate}
+\item \textbf{Entrevistas semi-estructuradas} con
+$n \in [15, 25]$ conductores activos reclutados en puntos de
+concentración (plazas de ride-hailing, paradas de reparto), con
+guión validado por pilotaje previo ($n_\text{piloto} = 3$).
+\item \textbf{Instrumentación de la aplicación} con telemetría
+consentida (Sección~\ref{sec:app}) que capture ratings de
+exactitud (1--5 estrellas), comparación tiempo real vs.\ P50
+predicho en cada viaje completado, y tipo de operador
+(Uber Eats, DiDi, Rappi, otros).
+\end{enumerate}
+
+La meta de tamaño muestral cuantitativo es $N \geq \num{500}$
+viajes etiquetados por exactitud en un periodo de seis semanas,
+lo que permitiría estimar el intervalo de error MAPE con
+$\pm\SI{1.5}{pp}$ al \SI{95}{\percent} de confianza bajo el
+supuesto de varianza observada en la muestra piloto.
+
+\subsection{Segmentación y estrategia de adopción}
+
+El mercado objetivo se puede segmentar en tres capas de prioridad
+descendente:
+
+\begin{keybox}[Segmentación de mercado objetivo]
+\textbf{\textcolor{vialAmber}{Tier 1 --- Repartidores profesionales.}}
+Usuarios activos diarios de apps de entrega (\num{180000}
+conductores estimados en la \ZMVM). Dolor agudo, alta disposición
+a probar nuevas herramientas, sensibilidad al precio extrema. El
+producto debe ser gratuito en su capa base.\\[0.3em]
+\textbf{\textcolor{vialTeal}{Tier 2 --- Operadores de flotas.}}
+Empresas que operan flotas dedicadas (Amazon Logistics, Mercado
+Libre, restaurantes con delivery propio). Unos \num{650}
+operadores formales en la \ZMVM. Disposición alta a pagar por
+herramientas que demuestren ahorro en SLA de entrega. Modelo B2B
+con suscripción mensual por conductor.\\[0.3em]
+\textbf{\textcolor{vialAqua}{Tier 3 --- Servicios especializados
+y conductores frecuentes.}} Transportes privados, traslados
+ejecutivos, conductores con trayectos diarios largos fijos.
+Segmento secundario, monetizable vía plan individual premium con
+voz \texttt{nova} de alta calidad.
+\end{keybox}
+
+La estrategia de adopción prioriza el Tier 1 como \emph{wedge}
+de entrada: construir base de usuarios gratuitos, generar
+telemetría con su consentimiento (Sección~\ref{sec:app}), y usar
+esos datos para calibrar el modelo en tramos no cubiertos por
+las fuentes abiertas. Tier 2 se monetiza con el producto ya
+validado.
+
+\begin{tipbox}[Por qué este nicho y no otro]
+Existen segmentos con mayor capacidad de pago agregada (por
+ejemplo, flotas corporativas ejecutivas), pero el conductor de
+última milla es donde se cumplen simultáneamente tres
+condiciones: (i)~el dolor del intervalo de incertidumbre es
+medible en pesos, (ii)~la interfaz por voz es una restricción
+real de seguridad, no un lujo, y (iii)~las fuentes abiertas de
+datos del C5 y TomTom cubren bien las zonas por donde operan.
+Ningún otro nicho cumple las tres.
+\end{tipbox}
+
+% ═══════════════════════ §5 FUENTES DE DATOS ═══════════════════
+\section{Fuentes de datos}
+\label{sec:datos}
+
+\subsection{Taxonomía de fuentes por latencia}
+
+\VialAI\ se alimenta de cinco fuentes de datos heterogéneas,
+organizadas por su latencia característica y autoridad
+responsable. La Tabla~\ref{tab:fuentes} presenta la taxonomía
+completa.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\linewidth}{@{}l l l X@{}}
+\toprule
+\rowcolor{vialNavy!10}
+\textbf{Fuente} & \textbf{Latencia} & \textbf{Autoridad} &
+\textbf{Uso en el sistema} \\
+\midrule
+TomTom Traffic Stats & histórico & TomTom N.V. &
+Calibración de velocidades por hora y día de la semana para
+estimar matriz de transición.\\
+TomTom Routing & tiempo real & TomTom N.V. &
+Geometría de la ruta y ETA de referencia para evaluación.\\
+OpenWeatherMap & tiempo real & OWM Ltd.\ (UK) &
+Condiciones meteorológicas actuales (lluvia, visibilidad).\\
+C5 \CDMX\ & cuasi-tiempo real & Gobierno \CDMX &
+Incidentes activos (choques, manifestaciones, obras).\\
+Google Maps Platform & histórico/RT & Google LLC &
+Validación cruzada de ETAs en rutas seleccionadas.\\
+\bottomrule
+\end{tabularx}
+\caption{Taxonomía de fuentes de datos de \VialAI\ según latencia
+característica. La mezcla de fuentes históricas y en tiempo real
+permite tanto calibración robusta del modelo como ajuste a
+condiciones operativas vigentes.}
+\label{tab:fuentes}
+\end{table}
+
+\subsection{TomTom Traffic Stats}
+
+\textbf{Qué registra.} Velocidades históricas agregadas por
+segmento vial, hora del día, día de la semana y mes del año,
+derivadas de la flota de sensores anónimos GPS de TomTom.
+Cobertura mundial con resolución suficiente para vías primarias
+y secundarias de la \ZMVM.
+
+\textbf{Por qué se eligió.} Es la fuente comercial con mayor
+penetración en datos viales para México. Su granularidad temporal
+(\num{15} minutos) y la calidad de su agregación permiten
+calibrar la matriz de transición Markov con resolución temporal
+relevante.
+
+\textbf{Información seleccionada.} Para cada corredor calibrado
+se extraen velocidades promedio y desviación estándar en ventanas
+de \num{15} minutos durante un horizonte de \num{12} meses. Esta
+serie permite estimar los parámetros de la distribución
+condicional de velocidad en cada estado de tráfico.
+
+\textbf{Flujo de acción.} La ingesta se realiza fuera de línea en
+\texttt{src/ingestion/tomtom\_client.py}, se persiste como parquet
+en \texttt{data/raw/} y se procesa hacia las matrices de
+transición mediante el pipeline de calibración en
+\texttt{src/simulation/markov\_chain.py}.
+
+\subsection{TomTom Routing}
+
+\textbf{Qué registra.} Rutas óptimas entre pares origen--destino
+consultados con ETAs instantáneos basados en condiciones de
+tráfico actuales. Proporciona la geometría de la ruta como
+polilínea (lat/lon) y el tiempo estimado propietario de TomTom.
+
+\textbf{Por qué se eligió.} Se usa como \emph{benchmark}
+competitivo y como proveedor de geometría para el mapa Folium.
+La ruta propuesta se toma como verdad geométrica y el ETA como
+línea base contra la que se compara la predicción probabilística
+de \VialAI.
+
+\textbf{Flujo de acción.} Cada consulta del usuario dispara una
+llamada a la \textsc{api} de Routing
+(\texttt{src/ingestion/tomtom\_routing.py}) con parámetros
+\texttt{maxAlternatives=2} para obtener hasta tres rutas. El
+evaluador multi-ruta (\texttt{src/simulation/evaluador\_rutas.py})
+ejecuta Monte Carlo independiente sobre cada alternativa y
+rankea por P50 y amplitud de banda.
+
+\subsection{OpenWeatherMap}
+
+\textbf{Qué registra.} Condiciones meteorológicas actuales
+(temperatura, precipitación, visibilidad, velocidad y dirección
+del viento) en el punto geográfico consultado. Resolución
+temporal: actualización cada \num{10} minutos.
+
+\textbf{Por qué se eligió.} Ofrece un plan gratuito suficiente
+para las consultas del proyecto (\num{1000} llamadas/día) con
+cobertura global homogénea. La calidad de su integración con
+tráfico urbano está documentada en la literatura
+\citep{owm2023traffic}.
+
+\textbf{Información seleccionada.} Solo se consume el estado
+actual (no pronósticos) en el punto medio de la ruta. El código
+identificador de condición (p.\ ej.\ \texttt{Rain:moderate})
+alimenta el clasificador de perturbaciones dinámicas
+(Sección~\ref{sec:perturbaciones}).
+
+\textbf{Flujo de acción.}
+\texttt{src/ingestion/weather\_client.py} consulta bajo demanda y
+aplica caché de \num{5} minutos para evitar costos innecesarios.
+
+\subsection{C5 \CDMX\ (API CKAN)}
+
+\textbf{Qué registra.} Incidentes activos reportados al Centro
+de Comando, Control, Cómputo, Comunicaciones y Contacto
+Ciudadano (C5) de la \CDMX: choques, manifestaciones, obras
+viales, bloqueos, protestas. Cada incidente incluye
+georreferenciación, tipo, hora de registro y estado (activo,
+atendido, archivado).
+
+\textbf{Autoridad y zona cubierta.} Gobierno de la \CDMX, Agencia
+Digital de Innovación Pública. Cobertura: exclusivamente los
+\num{16} alcaldías de la \CDMX\ propiamente dicha. Los municipios
+conurbados (Naucalpan, Tlalnepantla, Ecatepec, etc.) no están
+cubiertos por esta fuente.
+
+\textbf{Por qué se eligió.} Es la única fuente oficial pública
+con detalle suficiente de incidentes urbanos. Su licencia abierta
+(\textsc{cc-by}) permite uso comercial sin restricciones y su
+\textsc{api ckan} es estable y bien documentada.
+
+\textbf{Flujo de acción.}
+\texttt{src/ingestion/eventos\_client.py} consulta la \textsc{api}
+cada \num{5} minutos y mantiene un caché en memoria con TTL
+extendido para tolerar caídas temporales del servicio. La
+clasificación de eventos a factor de corrección sobre la matriz
+de transición se hace en
+\texttt{src/simulation/eventos\_dinamicos.py}.
+
+\subsection{Google Maps Platform}
+
+\textbf{Qué registra.} ETAs y geocodificación. Se usa
+exclusivamente como tercer punto de validación cruzada en casos
+específicos donde TomTom Routing reporta valores atípicos. No es
+una dependencia operativa del sistema; se habilita mediante
+configuración.
+
+\textbf{Por qué se incluye.} Diversificación de proveedores
+reduce el riesgo de dependencia exclusiva de TomTom para la
+validación. Además permite crossvalidación geográfica en
+coordenadas.
+
+\subsection{Flujo integrado de ingesta}
+
+La Figura~\ref{fig:pipeline} ya muestra el diagrama de conexión
+de alto nivel. Operacionalmente, el módulo
+\texttt{src/ingestion/pipeline.py} implementa la clase
+\texttt{PipelineIntegrador} que orquesta las cinco fuentes con
+manejo diferenciado de fallas: las fuentes de calibración
+histórica son bloqueantes (el modelo no puede ejecutarse sin
+ellas), mientras que las fuentes en tiempo real degradan el
+sistema a una predicción basada solo en datos históricos cuando
+fallan.
+
+\begin{tipbox}[Principio de ingesta: tolerancia asimétrica]
+Las fuentes históricas se consideran críticas porque definen la
+matriz de transición. Las fuentes en tiempo real son
+enriquecimiento: mejoran la predicción cuando están disponibles,
+pero el sistema entrega una estimación usable aunque fallen
+todas. Esta asimetría refleja la distinción entre
+\emph{correctness} (matriz calibrada) y \emph{recency} (ajuste
+al instante actual).
+\end{tipbox}
+
+% ═══════════════════════ §6 MODELO ESTOCÁSTICO ═════════════════
+\section{Modelo estocástico}
+\label{sec:modelo}
+
+\subsection{Formulación: tráfico como cadena de Markov discreta}
+
+Modelamos el tráfico en un segmento vial como un proceso
+estocástico discreto $\{X_t\}_{t=0}^T$ donde $X_t \in
+\mathcal{S}$ representa el \emph{estado de tráfico} en el
+intervalo temporal $t$. Se define el espacio de estados
+
+\begin{equation}
+\mathcal{S} = \{s_1, s_2, s_3\} =
+\{\text{fluido}, \text{moderado}, \text{congestionado}\},
+\end{equation}
+
+determinado empíricamente a partir de cuantiles de velocidad
+observada: $s_1$ corresponde a velocidades mayores al
+\SI{75}{\percent} de la velocidad libre del segmento, $s_2$
+entre \SI{40}{\percent} y \SI{75}{\percent}, y $s_3$ por debajo
+del \SI{40}{\percent}.
+
+Se asume la \textbf{propiedad de Markov}:
+
+\begin{equation}
+\Prob(X_{t+1} = s_j \mid X_0, X_1, \ldots, X_t) =
+\Prob(X_{t+1} = s_j \mid X_t).
+\end{equation}
+
+Este supuesto es una simplificación deliberada. Sabemos que el
+tráfico real tiene memoria más larga que un paso (por ejemplo,
+un embotellamiento persistente afecta varios intervalos
+sucesivos), pero la calibración empírica muestra que la pérdida
+de precisión por truncar la memoria a un paso es reducida
+comparada con la ganancia en tratabilidad computacional para
+simulación Monte Carlo vectorizada.
+
+La dinámica del sistema queda completamente especificada por la
+\textbf{matriz de transición}
+
+\begin{equation}
+\mathbf{P} =
+\begin{pmatrix}
+p_{11} & p_{12} & p_{13}\\
+p_{21} & p_{22} & p_{23}\\
+p_{31} & p_{32} & p_{33}
+\end{pmatrix}, \qquad p_{ij} = \Prob(X_{t+1}=s_j \mid X_t=s_i),
+\end{equation}
+
+con restricciones $p_{ij} \geq 0$ y
+$\sum_j p_{ij} = 1$ para todo $i$. La matriz $\mathbf{P}$ se
+calibra separadamente para cada combinación (hora del día, día
+de la semana), lo que implica \num{24}$\times$\num{7} $=
+\num{168}$ matrices por corredor.
+
+\subsection{Calibración por máxima verosimilitud}
+
+Dado un conjunto de trayectorias históricas observadas
+$\mathcal{D} = \{x_0, x_1, \ldots, x_T\}$ sobre el corredor de
+interés en la ventana temporal de interés, el estimador de
+máxima verosimilitud (MLE) de cada entrada de $\mathbf{P}$ es
+
+\begin{equation}
+\hat{p}_{ij} = \frac{n_{ij}}{\sum_k n_{ik}},
+\end{equation}
+
+donde $n_{ij}$ es el número de transiciones observadas desde
+$s_i$ hacia $s_j$ en $\mathcal{D}$. Para evitar probabilidades
+cero en transiciones raras pero posibles, se aplica
+\emph{suavizado de Laplace} con parámetro $\alpha = 0.5$:
+
+\begin{equation}
+\hat{p}_{ij} = \frac{n_{ij} + \alpha}{\sum_k (n_{ik} + \alpha)}.
+\end{equation}
+
+\subsection{Propiedades estructurales}
+
+\textbf{Distribución estacionaria.} Cuando $\mathbf{P}$ es
+irreducible y aperiódica, existe un vector $\bm{\pi}$ que
+satisface $\bm{\pi}^\top \mathbf{P} = \bm{\pi}^\top$ con
+$\sum_i \pi_i = 1$. Esta distribución caracteriza el
+comportamiento a largo plazo del sistema y se interpreta como la
+proporción asintótica del tiempo que un corredor pasa en cada
+estado durante la ventana horaria calibrada. La matriz calibrada
+empíricamente satisface las condiciones de Perron-Frobenius, por
+lo que $\bm{\pi}$ es única.
+
+\textbf{Ecuación de Chapman-Kolmogorov.} Para dos pasos
+consecutivos:
+
+\begin{equation}
+\Prob(X_{t+2}=s_k \mid X_t=s_i) = \sum_j p_{ij}\, p_{jk} =
+[\mathbf{P}^2]_{ik},
+\end{equation}
+
+que generaliza a $n$ pasos como $\Prob(X_{t+n}=s_k \mid X_t=s_i)
+= [\mathbf{P}^n]_{ik}$. Esta propiedad es la base de la
+composabilidad del modelo a lo largo de trayectos multi-segmento.
+
+\subsection{Simulación Monte Carlo vectorizada}
+
+Una vez calibrada $\mathbf{P}$, la predicción del tiempo de viaje
+sobre un corredor de $K$ segmentos con estado inicial conocido
+$X_0 = s_i$ se obtiene por simulación Monte Carlo:
+
+\begin{enumerate}
+\item Se generan $N$ trayectorias independientes
+$\{X_t^{(n)}\}_{t=0}^{K}$, $n=1,\ldots,N$, muestreando en cada
+paso $X_{t+1}^{(n)} \sim \text{Cat}(\mathbf{P}[X_t^{(n)},:])$.
+\item Para cada trayectoria se calcula el tiempo total
+$T^{(n)} = \sum_{t=0}^{K-1} \tau(X_t^{(n)})$, donde
+$\tau(s)$ es el tiempo medio condicional al estado $s$
+(calibrado empíricamente).
+\item La distribución empírica $\{T^{(n)}\}_{n=1}^N$ provee los
+percentiles P10, P50 y P90 que se entregan al usuario.
+\end{enumerate}
+
+En \VialAI\ se adopta $N = \num{10000}$. La
+Figura~\ref{fig:convergencia} muestra la convergencia empírica
+de los tres percentiles clave conforme $N$ crece.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{fig3_convergencia_mc.png}
+\caption{Convergencia de los percentiles P10, P50 y P90 como
+función del número de trayectorias Monte Carlo $N$, promediado
+sobre \num{20} corridas independientes. $N=\num{10000}$ ofrece
+el mejor compromiso costo--precisión: a partir de ese punto las
+ganancias marginales son despreciables frente al costo de
+cómputo adicional.}
+\label{fig:convergencia}
+\end{figure}
+
+\textbf{Error estándar del estimador del percentil.} Para el
+percentil empírico $\hat{q}_\alpha$ con densidad real $f$ del
+tiempo de viaje en el cuantil $q_\alpha$, la teoría asintótica
+provee
+
+\begin{equation}
+\sqrt{N}\,(\hat{q}_\alpha - q_\alpha) \xrightarrow{d}
+\mathcal{N}\!\left(0,\ \frac{\alpha(1-\alpha)}{f(q_\alpha)^2}\right),
+\label{eq:varianza-percentil}
+\end{equation}
+
+por lo que el error estándar del P50 decrece como $1/\sqrt{N}$.
+Con $N=\num{10000}$ y las varianzas observadas en corredores
+típicos, el error estándar del P50 es inferior a \num{0.3}
+minutos, comparable al nivel de resolución temporal del sistema
+(la precisión de un reloj de conductor real).
+
+\textbf{Vectorización.} La implementación en
+\texttt{src/simulation/monte\_carlo.py} vectoriza la simulación
+con \texttt{numpy}, pre-computando las matrices acumuladas
+$F_i = \text{cumsum}(\mathbf{P}[i,:])$ y muestreando mediante
+\texttt{np.searchsorted} sobre muestras uniformes. Esto logra
+latencias de \SI{40}{ms} para $N=\num{10000}$ en CPU estándar,
+muy por debajo del presupuesto de \SI{5}{s} del sistema.
+
+% ═══════════════════════ §7 PERTURBACIONES ═════════════════════
+\section{Perturbaciones y eventos}
+\label{sec:perturbaciones}
+
+\subsection{Catálogo estático de perturbaciones}
+
+Se definen \num{11} categorías de perturbaciones que modifican
+multiplicativamente la matriz de transición: lluvia leve, lluvia
+moderada, lluvia fuerte, granizo, niebla, choque (un carril),
+choque (dos carriles), manifestación, obra vial, evento deportivo,
+evento religioso. Cada una tiene un \textbf{factor de amplificación}
+$f \in [1, 4]$ calibrado empíricamente.
+
+La transformación sobre la matriz es
+
+\begin{equation}
+\mathbf{P}_{\text{perturbada}} = \text{Norm}\!\left(
+\mathbf{P} \odot \mathbf{M}_f \right),
+\end{equation}
+
+donde $\mathbf{M}_f$ es una máscara de amplificación que
+incrementa las transiciones hacia estados más congestionados por
+el factor $f$, y $\text{Norm}(\cdot)$ renormaliza filas para
+preservar la condición de matriz estocástica. La
+Figura~\ref{fig:perturbaciones} muestra el impacto de las
+perturbaciones sobre la distribución estacionaria $\bm{\pi}^*$.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.88\textwidth]{fig6_perturbaciones_impacto.png}
+\caption{Impacto de las \num{11} perturbaciones catalogadas sobre
+la distribución estacionaria $\bm{\pi}^*$ de un corredor típico.
+La lluvia fuerte desplaza $\SI{18}{pp}$ la masa de probabilidad
+del estado ``fluido'' hacia ``congestionado''; un choque en dos
+carriles desplaza $\SI{27}{pp}$.}
+\label{fig:perturbaciones}
+\end{figure}
+
+\subsection{Detección cuasi-tiempo-real vía C5 \CDMX}
+
+El módulo \texttt{src/simulation/eventos\_dinamicos.py} consulta
+la \textsc{api} de C5 cada \num{5} minutos y clasifica los
+incidentes activos en el corredor de consulta. Si detecta un
+evento relevante, aplica el factor correspondiente a la matriz
+de transición vigente. La Figura~\ref{fig:heatmap} muestra el
+patrón temporal de incidentes registrados durante \num{2023}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.88\textwidth]{fig2_heatmap_incidentes.png}
+\caption{Mapa de calor de incidentes registrados por C5 \CDMX\
+durante \num{2023}, agregados por hora del día y día de la
+semana. Los picos de viernes \num{17}--\num{21}h y sábado
+\num{13}--\num{17}h corresponden al retorno masivo de la jornada
+laboral y al tráfico de entretenimiento, respectivamente.}
+\label{fig:heatmap}
+\end{figure}
+
+% ═══════════════════════ §8 AGENTE ═════════════════════════════
+\section{Agente conversacional VialAI}
+\label{sec:agente}
+
+\subsection{Arquitectura del tool-use loop}
+
+El agente \VialAI\ está implementado como una clase Python
+(\texttt{VialAIAgent} en \texttt{src/agent/agent.py}) que opera
+un \emph{tool-use loop} cerrado sobre el modelo Claude Opus 4.6.
+El flujo por consulta del usuario es:
+
+\begin{enumerate}
+\item Se construye un mensaje con el prompt del usuario más un
+prefijo de contexto que inyecta los lugares guardados
+(Subsección~\ref{sec:contexto}).
+\item Se envía al modelo junto con el system prompt y el esquema
+de las seis herramientas registradas.
+\item El modelo decide una o más invocaciones de herramienta y
+las emite como bloques \texttt{tool\_use}.
+\item El agente ejecuta cada herramienta en Python (no en el LLM)
+y devuelve los resultados como \texttt{tool\_result}.
+\item El modelo observa los resultados y decide si invoca más
+herramientas o emite la respuesta final en texto.
+\item El agente retorna la respuesta al caller (Streamlit).
+\end{enumerate}
+
+Este patrón, conocido como \emph{agentic reasoning with
+structured tool outputs}, permite que Claude razone sobre
+resultados concretos del motor estocástico en lugar de generar
+predicciones numéricas por sí mismo (lo que sería propenso a
+alucinación).
+
+\subsection{Las seis herramientas registradas}
+
+\begin{keybox}[Herramientas del agente VialAI]
+\textbf{\texttt{predecir\_tiempo\_viaje}} ---
+Dada lat/lon de origen y destino más hora de salida, ejecuta
+Markov + Monte Carlo y retorna
+$\{P_{10}, P_{50}, P_{90}, \text{distancia\_km}\}$.\\[0.3em]
+\textbf{\texttt{consultar\_trafico\_ahora}} ---
+Retorna el factor de congestión actual de TomTom Traffic para la
+zona consultada.\\[0.3em]
+\textbf{\texttt{verificar\_perturbaciones}} ---
+Lista las perturbaciones estáticas conocidas (clima, obras) que
+afectan a la ruta.\\[0.3em]
+\textbf{\texttt{detectar\_eventos\_activos}} ---
+Consulta C5 \CDMX\ y retorna eventos activos cuasi-tiempo-real
+en un radio del corredor.\\[0.3em]
+\textbf{\texttt{seleccionar\_mejor\_ruta}} ---
+Solicita a TomTom Routing hasta tres rutas alternativas, corre
+Monte Carlo sobre cada una, rankea por P50 e incertidumbre, y
+retorna la mejor junto con el ranking completo.\\[0.3em]
+\textbf{\texttt{usar\_ruta\_personalizada}} ---
+Dada un nombre de lugar personalizado del usuario
+(p.\ ej.\ ``Casa'', ``Trabajo''), retorna las coordenadas
+persistidas.
+\end{keybox}
+
+\subsection{Inyección de contexto para lugares personalizados}
+\label{sec:contexto}
+
+Un reto de diseño identificado durante el desarrollo fue que el
+modelo LLM no tiene acceso directo al \texttt{session\_state} de
+Streamlit donde viven los lugares guardados por el usuario. La
+herramienta \texttt{usar\_ruta\_personalizada} existe pero el
+modelo rara vez la invoca proactivamente porque no tiene indicio
+de que existan lugares guardados hasta que ya está mid-flight.
+
+La solución adoptada es \textbf{inyección de contexto en el
+prompt}: antes de cada llamada al agente, el helper
+\texttt{\_construir\_contexto\_lugares} en el frontend concatena
+un prefijo textual al prompt del usuario con todos sus lugares
+guardados (nombre, coordenadas, dirección, tipo). El prefijo se
+ve así:
+
+\begin{lstlisting}[language=Python,caption={Prefijo inyectado
+antes del prompt del usuario (extracto)}]
+[Contexto: lugares guardados por el usuario]
+- Casa: lat=19.4326, lon=-99.1332 (suele ser origen)
+- Trabajo: lat=19.4280, lon=-99.1676 (suele ser destino)
+- AICM: lat=19.4363, lon=-99.0721 (suele ser destino)
+[Fin del contexto. Usa estas coordenadas directamente si el
+usuario menciona uno de estos nombres.]
+
+<prompt del usuario aqui>
+\end{lstlisting}
+
+Este patrón, estándar en agentes LLM con estado de usuario, es
+más robusto que depender de que el modelo llame a la herramienta
+correcta proactivamente. La herramienta
+\texttt{usar\_ruta\_personalizada} queda disponible como recurso
+de respaldo para casos edge.
+
+% ═══════════════════════ §9 VOZ ════════════════════════════════
+\section{Interfaz multimodal por voz}
+\label{sec:voz}
+
+\subsection{Caso de uso: manos libres para conductores}
+
+El repartidor prototípico de la Sección~\ref{sec:perfil} conduce
+una motocicleta en la \ZMVM\ entre \num{9} y \num{10} horas al
+día. Durante ese tiempo no puede ni debe operar una interfaz
+táctil. La voz es el único canal de entrada y salida
+operativamente seguro.
+
+Diseñar una interfaz por voz robusta para este contexto presenta
+cuatro retos concretos que guiaron las decisiones arquitecturales:
+
+\begin{enumerate}
+\item La transcripción debe funcionar con ruido de motor y viento.
+\item El sistema debe tolerar cuotas agotadas o fallos de red
+sin colapsar.
+\item La respuesta hablada debe ser comprensible en una sola
+escucha (no un párrafo con markdown).
+\item El vocabulario regional mexicano (nombres de colonias,
+vías, puntos de referencia) debe reconocerse con alta precisión.
+\end{enumerate}
+
+\subsection{Arquitectura de tres capas con degradación graceful}
+
+La solución implementada es una \textbf{pipeline de tres capas},
+cada una con un backend primario y uno de respaldo que activa
+automáticamente si el primario falla:
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  layer/.style={rectangle, rounded corners=4pt, minimum width=5.5cm,
+                minimum height=1.4cm, align=center, font=\small,
+                drop shadow=vialMuted},
+  primary/.style={layer, fill=vialTeal!20, draw=vialTeal, thick},
+  fallback/.style={layer, fill=vialAmber!15, draw=vialAmber!80!black,
+                    thick, dashed},
+  inout/.style={ellipse, draw=vialNavy, fill=vialNavy!5,
+                 minimum width=2.5cm, minimum height=0.9cm, font=\small},
+  arr/.style={-Latex, line width=0.9pt, draw=vialNavy},
+  fbarr/.style={-Latex, line width=0.7pt, draw=vialAmber!80!black, dashed},
+]
+% IO
+\node[inout] (in) at (-1,6) {Audio entrada};
+\node[inout] (out) at (13,6) {Audio salida};
+
+% Layer 1 STT
+\node[primary] (stt1) at (2.5,4) {\textbf{STT primario}\\
+  faster-whisper (local)};
+\node[fallback] (stt2) at (2.5,2) {\textbf{STT respaldo}\\
+  Whisper-1 (OpenAI)};
+
+% Layer 2 síntesis
+\node[primary] (ll) at (6.5,4) {\textbf{Compresión semántica}\\
+  Claude Haiku 4.5};
+\node[fallback] (ll2) at (6.5,2) {\textbf{Fallback regex}\\
+  limpia markdown, toma 2 oraciones};
+
+% Layer 3 TTS
+\node[primary] (tts1) at (10.5,4) {\textbf{TTS primario}\\
+  OpenAI tts-1 (voz nova)};
+\node[fallback] (tts2) at (10.5,2) {\textbf{TTS respaldo}\\
+  pyttsx3 (SAPI5 local)};
+
+% Flechas happy path
+\draw[arr] (in) -- (stt1);
+\draw[arr] (stt1) -- (ll);
+\draw[arr] (ll) -- (tts1);
+\draw[arr] (tts1) -- (out);
+
+% Flechas fallback
+\draw[fbarr] (stt1) -- node[right, font=\scriptsize\itshape,
+  text=vialAmber!80!black] {falla} (stt2);
+\draw[fbarr] (stt2) to[bend right=30] (ll);
+\draw[fbarr] (ll) -- node[right, font=\scriptsize\itshape,
+  text=vialAmber!80!black] {falla} (ll2);
+\draw[fbarr] (ll2) to[bend right=30] (tts1);
+\draw[fbarr] (tts1) -- node[right, font=\scriptsize\itshape,
+  text=vialAmber!80!black] {falla} (tts2);
+\draw[fbarr] (tts2) to[bend right=30] (out);
+
+% Labels de capa
+\node[font=\bfseries\color{vialNavy}] at (2.5,5.2) {1. Transcripción};
+\node[font=\bfseries\color{vialNavy}] at (6.5,5.2) {2. Compresión};
+\node[font=\bfseries\color{vialNavy}] at (10.5,5.2) {3. Síntesis};
+\end{tikzpicture}
+\caption{Arquitectura de voz de tres capas con degradación
+\emph{graceful}. Cada capa tiene un backend primario de alta
+calidad y un respaldo automático. El sistema sobrevive al fallo
+independiente de cualquier capa sin bloquear la respuesta al
+usuario.}
+\label{fig:voz-arq}
+\end{figure}
+
+\textbf{Capa 1: STT (speech-to-text).} El primario es
+\texttt{faster-whisper} ejecutándose localmente en CPU. Es
+gratuito, sin cuota, sin red. El modelo usado es \texttt{base}
+(\SI{150}{MB}) que ofrece el mejor balance
+latencia--precisión para vocabulario conversacional. El prompt
+de condicionamiento incluye vocabulario vial \CDMX\
+(\emph{Polanco}, \emph{Periférico}, \emph{AICM}, etc.) para
+mejorar la tasa de reconocimiento de topónimos. El respaldo es
+Whisper-1 de OpenAI, seleccionable mediante variable de entorno
+\texttt{VIALAI\_STT\_BACKEND=openai}.
+
+\textbf{Capa 2: Compresión semántica.} La respuesta del agente
+VialAI puede ser larga, con tablas markdown y emojis. Un
+sintetizador TTS leería literalmente \emph{``asterisco asterisco
+ruta asterisco asterisco''}. Para evitarlo, se interpone una
+capa de compresión con Claude Haiku 4.5 que recibe la respuesta
+completa del agente y retorna \textbf{una sola oración
+hablable}, en español neutro, de máximo \num{30} palabras,
+conteniendo solo distancia, tiempo predicho y perturbación
+relevante. Si Haiku falla por cuota o red, un \emph{fallback}
+regex limpia markdown, elimina símbolos problemáticos y retorna
+las dos primeras oraciones del texto original.
+
+\textbf{Capa 3: TTS (text-to-speech).} El primario es
+\texttt{tts-1} de OpenAI con voz \texttt{nova}, que ofrece
+calidad casi humana. El respaldo es \texttt{pyttsx3}
+aprovechando las voces SAPI5 de Windows (voces \emph{Sabina} o
+\emph{Helena} para español-\textsc{es}), que son robóticas pero
+100\% locales y gratuitas.
+
+\subsection{Pipeline de audio completo}
+
+El flujo integrado se sintetiza así: el conductor pulsa el botón
+de grabación, habla su consulta, detiene la grabación. El audio
+WAV se pasa a la Capa 1, que retorna texto. El texto se inyecta
+con el contexto de lugares (Sección~\ref{sec:contexto}) y se
+envía al agente \VialAI. La respuesta markdown del agente pasa a
+la Capa 2, que retorna la oración hablable. Esa oración pasa a
+la Capa 3, que retorna bytes MP3 o WAV. Los bytes se pasan al
+componente \texttt{st.audio} de Streamlit con
+\texttt{autoplay=True}. El conductor oye la respuesta sin haber
+dejado de mirar el camino.
+
+Tiempo total típico extremo-a-extremo: \num{3.5} a \num{5}
+segundos dependiendo de cuál backend de cada capa esté activo.
+
+\begin{tipbox}[Por qué esta arquitectura es valiosa para el
+proyecto]
+La degradación \emph{graceful} no es solo una conveniencia de
+ingeniería: es un argumento técnico de primera clase para la
+defensa académica. Demuestra comprensión de que los sistemas
+reales deben sobrevivir a fallos parciales de infraestructura, y
+que la robustez se diseña \emph{antes} de llegar a producción,
+no \emph{después} de la primera caída.
+\end{tipbox}
+
+% ═══════════════════════ §10 APP WEB ═══════════════════════════
+\section{Aplicación web: UrbanFlow \CDMX}
+\label{sec:app}
+
+\subsection{Arquitectura Streamlit}
+
+La aplicación web es un despliegue local de Streamlit (puerto
+\num{8510}) que ejecuta
+\texttt{app/streamlit\_app.py}. La arquitectura es \emph{single
+page} con dos regiones funcionales claramente diferenciadas:
+una barra lateral para la configuración de consulta
+(origen, destino, hora, perfil de vehículo, lugares guardados,
+perfil de usuario, estadísticas y chat del asistente) y un área
+principal que renderiza el mapa Folium, las tarjetas de
+resultado (P50, P10, P90, distancia, velocidad media) y el
+análisis contextual.
+
+Todo el estado de la sesión se mantiene en
+\texttt{st.session\_state}, incluyendo origen/destino activos,
+resultado vigente de la última predicción, lugares guardados,
+viaje en curso e historial de feedback. Los datos sensibles al
+persistente se escriben a \texttt{data/telemetry/} como JSON.
+
+\subsection{Flujos de usuario}
+
+La aplicación soporta tres flujos de entrada equivalentes:
+
+\begin{enumerate}
+\item \textbf{Manual:} el usuario selecciona origen y destino
+desde menús desplegables o haciendo clic sobre el mapa,
+configura hora de salida y pulsa ``Predecir trayecto''.
+\item \textbf{Chat:} el usuario escribe una consulta en lenguaje
+natural al agente (\emph{``¿Cuánto tardo de Polanco al AICM a las
+6 PM viernes?''}). El agente razona y responde con el cálculo
+completo.
+\item \textbf{Voz:} el usuario pulsa el botón de micrófono, habla
+la consulta, detiene la grabación y activa opcionalmente la
+respuesta hablada. El pipeline de tres capas
+(Sección~\ref{sec:voz}) procesa la entrada completa.
+\end{enumerate}
+
+\subsection{Identidad visual y captura de la interfaz}
+
+La interfaz respeta la paleta oficial de \VialAI\ (navy profundo
+como fondo principal, verde-agua para acentos primarios, ámbar
+para acciones destacadas). La Figura~\ref{fig:ui} muestra la
+aplicación en funcionamiento durante una consulta real de
+Azcapotzalco a Ciudad Universitaria \textsc{unam}.
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox[c][7cm][c]{0.86\textwidth}{\centering
+\color{vialMuted}\itshape
+[Espacio reservado para \texttt{fig8\_ui\_streamlit.png}.\\[0.3em]
+Captura de la aplicaci\'on en funcionamiento durante una consulta
+Azcapotzalco $\rightarrow$ Ciudad Universitaria \textsc{unam}.\\[0.3em]
+Reemplazar con \texttt{includegraphics} cuando el archivo est\'e disponible.]
+}}
+\caption{Aplicaci\'on \VialAI\ en ejecuci\'on. Panel lateral
+izquierdo con controles de consulta (hora de salida, fecha,
+predicci\'on, configuraci\'on avanzada, perfil, estad\'isticas);
+\'area central con el trayecto seleccionado, tabla de par\'ametros y
+estado del tr\'afico; panel derecho con el mapa interactivo que
+muestra la ruta real de TomTom Routing entre los marcadores A y
+B.}
+\label{fig:ui}
+\end{figure}
+
+\subsection{Telemetría local y feedback del usuario}
+
+La aplicación instrumenta tres mecanismos opcionales de captura
+de datos:
+
+\begin{enumerate}
+\item \textbf{Contador de uso:} incrementa silenciosamente al
+completar una predicción. Persiste pares (origen, destino) con
+frecuencia en \texttt{data/telemetry/stats\_rutas.json} para
+alimentar el panel ``Mis estadísticas''.
+\item \textbf{Rating de estrellas:} aparece solamente tras
+completar un viaje (pulsar ``Llegué''), con opción ``calificar
+después'' para no forzar interacción.
+\item \textbf{Comparación real vs.\ predicho:} al pulsar
+``Llegué'' el sistema calcula $\Delta = t_\text{real} -
+\hat{t}_{P50}$ y lo clasifica como \emph{exacto} ($|\Delta|
+\leq \SI{10}{\percent}$), \emph{cerca} ($\leq \SI{25}{\percent}$)
+o \emph{lejos} ($> \SI{25}{\percent}$). El historial se muestra
+al usuario en ``Mis estadísticas''.
+\end{enumerate}
+
+Todos los datos de telemetría se guardan \emph{localmente} en el
+equipo del usuario. Ningún dato personal se transmite a
+servidores externos. Esta decisión prioriza privacidad y
+confianza del usuario; en la siguiente iteración se contempla un
+opt-in explícito para compartir datos anónimos con fines de
+investigación.
+
+\subsection{Cómo se construyó}
+
+El desarrollo se estructuró en \textbf{\num{16} bloques
+incrementales}, cada uno con su propio hash de commit en
+GitHub. Los bloques \num{1}--\num{9} construyen el motor
+estocástico y las fuentes de datos; los bloques
+\num{10}--\num{12} implementan la interfaz por voz; los bloques
+\num{13}--\num{15} agregan lugares personalizados,
+sincronización con el mapa y telemetría; el bloque \num{16}
+arregla bugs de UX y cierra el desarrollo. Esta estrategia de
+\emph{micro-commits con validación manual entre pasos} fue
+esencial para mantener \num{720}+ tests en verde durante todo
+el ciclo de desarrollo.
+
+\begin{tipbox}[Principio de desarrollo]
+Commits pequeños, pruebas automáticas entre cada paso, rollback
+inmediato ante cualquier regresión. La velocidad de desarrollo
+sostenida se logra \emph{no} con grandes saltos, sino con
+iteraciones pequeñas y auditables.
+\end{tipbox}
+
+% ═══════════════════════ §11 VALIDACIÓN ════════════════════════
+\section{Validación empírica preliminar}
+\label{sec:validacion}
+
+\subsection{Metodología}
+
+Se seleccionaron \num{30} rutas de campo en la \ZMVM\ distribuidas
+en tres corredores representativos (Periférico Norte, Viaducto,
+Circuito Interior) y tres ventanas temporales (pico AM,
+mediodía, pico PM). Para cada ruta se compararon tres
+estimadores del tiempo de viaje:
+
+\begin{itemize}
+\item $\hat{t}_{P50}^{\text{VialAI}}$: mediana de la distribución
+Monte Carlo de \VialAI.
+\item $\hat{t}^{\text{TomTom}}$: ETA comercial de la \textsc{api}
+de TomTom Routing.
+\item $t^{\text{real}}$: tiempo observado medido en campo con
+cronómetro.
+\end{itemize}
+
+\subsection{Métricas}
+
+Se evaluaron tres métricas complementarias:
+
+\begin{equation}
+\MAPE = \frac{1}{N}\sum_{i=1}^{N}
+\frac{|\hat{t}_i - t_i^{\text{real}}|}{t_i^{\text{real}}},
+\qquad
+\text{MAE} = \frac{1}{N}\sum_{i=1}^{N} |\hat{t}_i - t_i^{\text{real}}|,
+\end{equation}
+
+más la \textbf{cobertura empírica} del intervalo P10--P90:
+
+\begin{equation}
+\text{Cobertura} = \frac{1}{N}\sum_{i=1}^{N}
+\mathbf{1}[\hat{t}_{P10,i} \leq t_i^{\text{real}} \leq
+\hat{t}_{P90,i}],
+\end{equation}
+
+cuyo valor nominal esperado es \SI{80}{\percent} por
+construcción de los percentiles.
+
+\subsection{Resultados comparativos}
+
+La Tabla~\ref{tab:resultados} resume los hallazgos clave.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\linewidth}{@{}X c c c@{}}
+\toprule
+\rowcolor{vialNavy!10}
+\textbf{Métrica} & \textbf{\VialAI\ (P50)} & \textbf{TomTom ETA}
+& \textbf{Ventaja} \\
+\midrule
+MAPE P50 & \SI{11.9}{\percent} & \SI{19.0}{\percent} &
+$+\SI{7.1}{pp}$\\
+MAE P50 (min) & \num{4.8} & \num{7.6} & $-\num{2.8}$\\
+Cobertura P10--P90 (nominal \SI{80}{\percent}) &
+\SI{93.3}{\percent} & n/a & ---\\
+Latencia por consulta (ms) & $<$\num{500} & $<$\num{500} &
+comparable\\
+\bottomrule
+\end{tabularx}
+\caption{Resultados de validación preliminar, $N=\num{30}$
+rutas. \VialAI\ entrega una mediana con menor error que el ETA
+comercial y adicionalmente provee un intervalo cuya cobertura
+empírica supera al nominal, indicando que la banda es
+razonablemente conservadora.}
+\label{tab:resultados}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.88\textwidth]{fig4_validacion_empirica.png}
+\caption{Error absoluto por ruta para \VialAI\ (azul) contra
+TomTom (gris) sobre las \num{30} rutas de validación. \VialAI\
+tiene menor mediana y menor dispersión de errores. Las rutas
+donde TomTom falla más corresponden a corredores con eventos
+activos de C5 que el ETA comercial no incorpora.}
+\label{fig:validacion}
+\end{figure}
+
+\subsection{Discusión de la discrepancia entre canales de entrada}
+
+Un hallazgo metodológico interesante surge al comparar consultas
+equivalentes realizadas por canal manual y por canal de voz
+
+
+sobre la misma ruta. Durante las pruebas de campo se observaron
+diferencias de hasta \num{14} minutos en el P50 predicho sobre
+el mismo trayecto conceptual cuando este se consultaba por voz
+(\emph{``llévame de Azcapotzalco a Ciudad Universitaria''}) vs.\
+cuando se configuraba manualmente con selectbox.
+
+La causa es \textbf{geocodificación distinta}: la consulta por
+voz geocodifica ``Azcapotzalco'' al centroide de la alcaldía
+(\num{19.4880}, $-$\num{99.1850}), mientras que la consulta
+manual desde el selectbox de rutas frecuentes usa un punto
+específico calibrado dentro del corredor. Para trayectos
+intra-alcaldía o con origen cerca del límite, la diferencia de
+centroide puede desplazar el origen efectivo varios kilómetros,
+lo que cambia la ruta óptima de TomTom Routing y, en
+consecuencia, toda la distribución Monte Carlo.
+
+\begin{warnbox}[Implicación para la interpretación de resultados]
+Las métricas reportadas en la Tabla~\ref{tab:resultados}
+corresponden a consultas por canal manual, donde el punto
+origen/destino está fijo. Las consultas por voz pueden tener
+error adicional atribuible a geocodificación, no al motor
+estocástico. Este efecto se cuantificará formalmente en la
+campaña de validación de la siguiente iteración
+(Sección~\ref{sec:futuro}).
+\end{warnbox}
+
+Esta discrepancia no es un bug sino una consecuencia natural de
+resolver nombres de lugar contra un sistema distinto que
+coordenadas explícitas. La solución planeada es la expansión del
+catálogo \texttt{PUNTOS\_CDMX} con puntos de referencia
+canónicos (estaciones de metro, plazas, hospitales) que tengan
+coordenadas determinadas y estables, y la inyección de un paso
+de desambiguación en el agente cuando el nombre resuelva a un
+polígono grande.
+
+% ═══════════════════════ §12 TRABAJO FUTURO ════════════════════
+\section{Trabajo futuro y limitaciones}
+\label{sec:futuro}
+
+\subsection{Limitaciones conocidas de la versión actual}
+
+La honestidad metodológica exige documentar qué no hace el
+sistema en su forma actual:
+
+\begin{enumerate}
+\item \textbf{Tamaño de la muestra de validación.} $N=\num{30}$
+rutas es suficiente para un estudio preliminar pero insuficiente
+para inferencia estadística robusta. El intervalo de confianza
+del MAPE reportado es ancho ($\pm\SI{3.8}{pp}$ al
+\SI{95}{\percent}).
+\item \textbf{Cobertura geográfica.} La calibración se realizó
+sobre tres corredores de la \CDMX. Extender a los municipios
+conurbados (Naucalpan, Tlalnepantla, Ecatepec) requiere datos
+adicionales del Estado de México, no cubiertos por el C5.
+\item \textbf{Botón ``Iniciar viaje'' desde voz/chat.} En la
+versión actual, el botón que activa el viaje operativo y dispara
+la medición del tiempo real solo está disponible en el flujo
+manual. Las consultas por voz producen respuesta hablada pero no
+activan el tracker de viaje. Esta integración está diseñada pero
+quedó pendiente de validación para la siguiente iteración.
+\item \textbf{Geocodificación de nombres de lugar.} Como se
+discutió en \S\ref{sec:validacion}, nombres amplios
+(``Azcapotzalco'') resuelven a centroides que pueden no
+corresponder al punto de interés real del usuario. La solución
+con catálogo canónico ampliado está planeada.
+\item \textbf{Ausencia de factores macro.} El modelo no
+incorpora todavía días feriados, vacaciones escolares, ni
+eventos masivos programados (conciertos, partidos de fútbol en
+estadios). Se incorporarán como factores de ajuste en la
+siguiente iteración.
+\item \textbf{Cobertura de motocicleta subóptima.} El modelo
+calibrado corresponde a automóvil promedio. La dinámica de
+motocicleta (capacidad de filtrarse entre carriles) difiere
+sustancialmente en congestión alta. Se requiere calibración
+específica con telemetría de repartidores.
+\end{enumerate}
+
+\subsection{Roadmap a seis meses}
+
+La siguiente iteración del proyecto, estimada para un horizonte
+de seis meses post-defensa, contempla tres hitos principales:
+
+\begin{keybox}[Roadmap de la siguiente iteración]
+\textbf{\textcolor{vialTeal}{Mes 1--2.}} Campaña de validación
+cuantitativa con $N\geq\num{500}$ viajes etiquetados por
+exactitud, reclutando \num{20}--\num{30} conductores
+profesionales del Tier~1. Recalibración de la matriz de
+transición con las observaciones acumuladas y publicación de
+una versión v4 del artículo con intervalos de confianza
+estrechos.\\[0.3em]
+\textbf{\textcolor{vialTeal}{Mes 3--4.}} Migración de la
+aplicación web a una versión móvil nativa Android (Kivy o
+Flutter) apta para montarse en manillar. Integración de GPS
+continuo para medir tiempo real sin requerir pulsar ``Llegué''.
+Calibración de perfil motocicleta.\\[0.3em]
+\textbf{\textcolor{vialTeal}{Mes 5--6.}} Primer piloto B2B con
+un operador de flota del Tier~2. Métricas de éxito: reducción de
+demoras fuera de SLA, satisfacción del conductor, costo por
+entrega. Formalización del modelo de suscripción.
+\end{keybox}
+
+\subsection{Monetización y sustentabilidad económica}
+
+El Tier~1 seguirá siendo gratuito con una versión que incluya
+voz \texttt{pyttsx3} (local, robótica pero comprensible). La
+monetización se estructura en tres capas:
+
+\begin{itemize}
+\item \textbf{Tier~1 Plus (individual):} \$\num{49} MXN/mes,
+acceso a voz \texttt{nova} de alta calidad, sin anuncios,
+historial ampliado.
+\item \textbf{Tier~2 (flotas):} \$\num{199} MXN/mes por
+conductor activo, panel de administración, reportes de
+SLA, API de integración con el sistema de gestión de flota del
+operador.
+\item \textbf{Tier~3 (enterprise):} cotización personalizada,
+calibración dedicada de corredores del cliente, SLA de
+\SI{99.5}{\percent}.
+\end{itemize}
+
+Los ingresos del Tier~1 Plus y Tier~2 financian el costo de
+calibración continua, los costos variables de las APIs externas
+(TomTom, OpenAI cuando se use voz premium) y el desarrollo de
+nuevas funcionalidades. El punto de equilibrio operativo
+estimado es \num{800} usuarios pagos entre Tier~1 Plus y Tier~2.
+
+% ═══════════════════════ §13 CONCLUSIONES ══════════════════════
+\section{Conclusiones}
+\label{sec:conclusiones}
+
+\VialAI\ demuestra que es posible construir un sistema de
+predicción de tiempos de viaje para la \ZMVM\ que combine rigor
+matemático probabilístico, calibración empírica con datos
+operativos, interfaz natural por voz y resiliencia ante fallos
+de infraestructura externa, todo dentro de un presupuesto de
+latencia sub-\SI{5}{s} y desplegable en hardware de gama media.
+
+Las \textbf{aportaciones principales} de este trabajo son:
+
+\begin{enumerate}
+\item La formalización del tráfico como cadena de Markov discreta
+de tres estados con calibración MLE, extendida por factores
+multiplicativos de perturbación documentados y reproducibles.
+\item La implementación de simulación Monte Carlo vectorizada
+con convergencia empírica validada, que entrega percentiles
+P10--P50--P90 con error estándar controlado.
+\item La integración de cinco fuentes de datos heterogéneas con
+manejo asimétrico de fallas, distinguiendo entre fuentes
+críticas para \emph{correctness} y fuentes para \emph{recency}.
+\item El diseño y construcción de un agente conversacional
+basado en Claude Opus 4.6 con seis herramientas especializadas,
+inyección de contexto para lugares personalizados y razonamiento
+en bucle cerrado sobre resultados concretos del motor matemático.
+\item La arquitectura de voz de tres capas con degradación
+\emph{graceful} documentada como patrón reutilizable para
+cualquier aplicación LLM-asistida que requiera tolerancia a
+fallos de servicios externos.
+\item La evidencia preliminar ($N=\num{30}$) de una mejora de
+\SI{7.1}{pp} en MAPE respecto al ETA comercial de TomTom, con
+cobertura empírica del intervalo P10--P90 superior al nominal.
+\end{enumerate}
+
+Las \textbf{limitaciones honestamente declaradas} en
+\S\ref{sec:futuro} (tamaño muestral, cobertura geográfica,
+discrepancia voz-manual, ausencia de factores macro) no
+invalidan los hallazgos sino que acotan su alcance y definen el
+plan de trabajo siguiente.
+
+El valor diferencial de \VialAI\ no reside en ninguna de sus
+capas individualmente. Cadenas de Markov, Monte Carlo,
+aprendizaje supervisado y agentes LLM existen por separado en
+el estado del arte. Reside en su \textbf{composición coherente}
+orientada al caso de uso concreto del conductor de última milla,
+y en la decisión de diseño transversal de que cada dependencia
+externa tenga un respaldo local ejercitado.
+
+Miguel, el repartidor prototípico del \S\ref{sec:intro}, no
+entiende de matrices de transición ni de percentiles empíricos.
+Lo que \VialAI\ le entrega es una oración de \num{25} palabras
+que le dice cuánto tarda en el peor caso razonable, por qué, y
+si vale la pena tomar una ruta alterna. Esa oración es el
+producto final del trabajo. Todo lo que está detrás de ella ---
+el motor estocástico, el agente, la voz, la telemetría --- existe
+para que esa oración sea correcta, rápida, y esté ahí cuando
+Miguel la necesita.
+
+\begin{tipbox}[Cierre]
+La movilidad urbana inteligente no se construye con el modelo
+más sofisticado ni con la interfaz más vistosa. Se construye
+cuando la matemática correcta llega al usuario correcto en el
+momento correcto, por un canal que no requiere quitar las manos
+del manubrio.
+\end{tipbox}
+
+% ═══════════════════════ REFERENCIAS ═══════════════════════════
+\begin{thebibliography}{99}
+
+\bibitem[AMVO(2024)]{amvo2024entregas}
+Asociación Mexicana de Venta Online (AMVO). (2024).
+\emph{Estudio de venta online México 2024: comportamiento del
+consumidor digital y logística de última milla.} AMVO, Ciudad de
+México.
+
+\bibitem[AMLO(2023)]{amlo2023repartidores}
+Secretaría del Trabajo y Previsión Social. (2023).
+\emph{Diagnóstico nacional de trabajadores de plataformas
+digitales: repartidores en el contexto urbano mexicano.}
+STPS, Gobierno de México.
+
+\bibitem[Gal and Ghahramani(2016)]{gal2016dropout}
+Gal, Y., \& Ghahramani, Z. (2016). Dropout as a Bayesian
+approximation: Representing model uncertainty in deep learning.
+\emph{International Conference on Machine Learning},
+pp.~\num{1050}--\num{1059}.
+
+\bibitem[Google(2023)]{google2023eta}
+Google Research. (2023). \emph{ETA prediction with graph neural
+networks in Google Maps.} Technical report, Google LLC.
+
+\bibitem[INEGI(2024)]{inegi2024densidad}
+Instituto Nacional de Estadística y Geografía (INEGI). (2024).
+\emph{Encuesta intercensal 2023: densidad poblacional y
+estructura urbana.} Aguascalientes, México.
+
+\bibitem[Insider Intelligence(2023)]{insider2023lastmile}
+Insider Intelligence. (2023). \emph{Last-mile delivery cost
+analysis: global benchmarks and emerging markets.} Report.
+
+\bibitem[Jenelius and Koutsopoulos(2013)]{jenelius2013travel}
+Jenelius, E., \& Koutsopoulos, H.~N. (2013). Travel time
+estimation for urban road networks using low frequency probe
+vehicle data. \emph{Transportation Research Part B:
+Methodological}, \num{53}, \num{64}--\num{81}.
+
+\bibitem[Koenker(2005)]{koenker2005quantile}
+Koenker, R. (2005). \emph{Quantile regression.} Cambridge
+University Press, Cambridge.
+
+\bibitem[Li et al.(2023)]{li2023stformer}
+Li, Z., Zhang, Y., \& Wang, H. (2023). STFormer: spatio-temporal
+transformers for probabilistic travel time prediction.
+\emph{IEEE Transactions on Intelligent Transportation Systems},
+\num{24}(\num{8}), \num{8456}--\num{8470}.
+
+\bibitem[Lopez et al.(2018)]{lopez2018sumo}
+Lopez, P.~A., Behrisch, M., Bieker-Walz, L., Erdmann, J.,
+Flötteröd, Y.-P., Hilbrich, R., Lücken, L., Rummel, J., Wagner,
+P., \& Wießner, E. (2018). Microscopic traffic simulation using
+SUMO. \emph{IEEE Intelligent Transportation Systems Conference},
+\num{2575}--\num{2582}.
+
+\bibitem[Observatorio(2024)]{observatorio2024trabajo}
+Observatorio del Trabajo Digno. (2024).
+\emph{Condiciones de trabajo de repartidores de plataformas
+digitales en la Zona Metropolitana del Valle de México.}
+Reporte técnico, México.
+
+\bibitem[OWM(2023)]{owm2023traffic}
+OpenWeather Ltd. (2023). \emph{Weather data integration for
+urban traffic prediction: best practices.} Whitepaper.
+
+\bibitem[SEMOVI(2024)]{semovi2024parque}
+Secretaría de Movilidad de la Ciudad de México (SEMOVI). (2024).
+\emph{Estadísticas del parque vehicular y movilidad en la
+\ZMVM.} Gobierno de la \CDMX.
+
+\bibitem[TomTom(2024a)]{tomtom2024index}
+TomTom International B.V. (2024).
+\emph{TomTom Traffic Index 2024: global urban congestion
+report.} Amsterdam.
+
+\bibitem[TomTom(2024b)]{tomtom2024routing}
+TomTom International B.V. (2024).
+\emph{TomTom Routing API: technical documentation and ETA
+methodology.} Amsterdam.
+
+\end{thebibliography}
+
+\end{document}
+
+% VERSIÓN MARTES 14 DE ABRIL DEL 2026
